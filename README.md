@@ -39,6 +39,13 @@ The **Enterprise Insights Copilot** is a full-stack, production-ready AI-powered
 - Node.js 18+ with npm
 - Git for version control
 
+### Clone the Repository
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/enterprise-insights-copilot.git
+cd enterprise-insights-copilot
+```
+
 ### Backend Setup
 ```bash
 # Navigate to backend
@@ -48,6 +55,7 @@ cd backend
 pip install -r requirements.txt
 
 # Start the server
+python main.py
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 

@@ -1,0 +1,112 @@
+**ENTERPRISE INSIGHTS COPILOT - TERMINAL COMMANDS**
+
+========================================================================
+**CONDA ENVIRONMENT SETUP**
+========================================================================
+
+**Create Conda Environment:**
+```bash
+conda create -n munna python=3.11 -y
+```
+
+**Activate Conda Environment:**
+```bash
+conda activate munna
+```
+
+**Deactivate Environment:**
+```bash
+conda deactivate
+```
+
+**List Conda Environments:**
+```bash
+conda env list
+```
+
+**Remove Environment (if needed):**
+```bash
+conda env remove -n munna
+```
+
+========================================================================
+**PROJECT SETUP COMMANDS**
+========================================================================
+
+**1. Backend Setup (FastAPI):**
+```bash
+cd backend
+pip install fastapi uvicorn python-multipart sqlalchemy psycopg2-binary
+pip install langchain langgraph langsmith pinecone-client
+pip install pandas numpy scipy scikit-learn plotly
+pip install python-dotenv pydantic pytest
+```
+
+**2. Frontend Setup (Next.js):**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+**3. Start Backend Server:**
+```powershell
+cd backend; uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**4. Install Ollama (Windows):**
+```bash
+# Download and install Ollama from https://ollama.ai
+ollama pull llama3.1
+ollama serve
+```
+
+**5. Run Full Project:**
+```powershell
+# Terminal 1 - Backend
+conda activate munna; cd backend; uvicorn main:app --reload
+
+# Terminal 2 - Frontend  
+cd frontend; npm run dev
+
+# Terminal 3 - Ollama
+ollama serve
+```
+
+========================================================================
+**DEVELOPMENT COMMANDS**
+========================================================================
+
+**Testing:**
+```powershell
+cd backend; pytest tests/ -v --cov=app
+```
+
+**Code Formatting:**
+```powershell
+cd backend; black .; isort .
+```
+
+**Database Migration:**
+```powershell
+cd backend; alembic upgrade head
+```
+
+**Install Project Dependencies:**
+```bash
+pip install -r requirements.txt
+```
+
+========================================================================
+**DEPLOYMENT COMMANDS**
+========================================================================
+
+**Build Frontend:**
+```powershell
+cd frontend; npm run build
+```
+
+**Run Production Backend:**
+```powershell
+cd backend; gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app
+```

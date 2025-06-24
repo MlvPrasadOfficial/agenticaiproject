@@ -1,0 +1,406 @@
+**ENTERPRISE INSIGHTS COPILOT - AGENT ARCHITECTURE & LANGGRAPH FLOW**
+
+========================================================================
+**AGENT DETAILED SPECIFICATIONS**
+========================================================================
+
+**1. PLANNING AGENT (Central Orchestrator)**
+------------------------------------------------------------------------
+**Purpose**: Master controller that analyzes user queries and orchestrates downstream agents
+**Responsibilities**:
+- Parse and understand user intent from natural language queries
+- Determine which agents need to be activated based on query type
+- Define execution sequence and parallel processing opportunities
+- Manage agent state and context passing
+- Handle error recovery and fallback strategies
+
+**Inputs**: User query, conversation history, available data context
+**Outputs**: Agent execution plan, task distribution, priority ordering
+**LLM Prompt Strategy**: Query classification and task decomposition
+**Key Decision Points**:
+- Data exploration vs insight generation vs visualization request
+- Single agent vs multi-agent workflow
+- Parallel vs sequential execution needs
+
+------------------------------------------------------------------------
+
+**2. QUERY AGENT**
+------------------------------------------------------------------------
+**Purpose**: Natural language understanding and intent parsing specialist
+**Responsibilities**:
+- Extract specific business questions from user queries
+- Identify mentioned metrics, dimensions, time ranges, filters
+- Translate business language into technical requirements
+- Handle ambiguous queries with clarifying questions
+
+**Inputs**: Raw user query, business context, data schema
+**Outputs**: Structured query intent, extracted entities, clarification needs
+**LLM Prompt Strategy**: Entity extraction and intent classification
+**Integration**: Works with Planning Agent to refine query understanding
+
+------------------------------------------------------------------------
+
+**3. RETRIEVAL AGENT**
+------------------------------------------------------------------------
+**Purpose**: Vector-based context retrieval from Pinecone knowledge base
+**Responsibilities**:
+- Convert user queries into embedding vectors
+- Perform semantic search across stored data embeddings
+- Retrieve relevant data context and historical insights
+- Rank and filter retrieved content by relevance
+
+**Inputs**: Query embeddings, search parameters, relevance thresholds
+**Outputs**: Relevant data chunks, context documents, similarity scores
+**Technical Stack**: Pinecone vector DB, embedding models
+**Performance Metrics**: Retrieval accuracy, response time, relevance scores
+
+------------------------------------------------------------------------
+
+**4. DATA AGENT (Exploratory Data Analysis)**
+------------------------------------------------------------------------
+**Purpose**: Automated data exploration and feature engineering specialist
+**Responsibilities**:
+- Generate comprehensive data profiles (distributions, correlations, outliers)
+- Perform automated feature engineering and selection
+- Create statistical summaries and data quality reports
+- Identify interesting patterns and potential insights
+
+**Inputs**: Raw datasets, column specifications, analysis requirements
+**Outputs**: Data profiles, feature engineering results, quality metrics
+**Technical Stack**: Pandas, NumPy, SciPy, statistical libraries
+**Key Capabilities**:
+- Automated EDA pipelines
+- Feature correlation analysis
+- Data quality assessment
+- Pattern detection algorithms
+
+------------------------------------------------------------------------
+
+**5. CLEANER AGENT (Data Preprocessing)**
+------------------------------------------------------------------------
+**Purpose**: Intelligent data cleaning and standardization
+**Responsibilities**:
+- Detect and handle missing values with context-aware strategies
+- Standardize units and formats across columns
+- Identify and handle outliers appropriately
+- Validate data consistency and integrity
+
+**Inputs**: Raw datasets, data quality issues, business rules
+**Outputs**: Cleaned datasets, data transformation logs, quality metrics
+**Cleaning Strategies**:
+- Smart imputation (mean, median, mode, interpolation, ML-based)
+- Outlier detection (IQR, Z-score, isolation forest)
+- Unit standardization and format normalization
+- Business rule validation
+
+------------------------------------------------------------------------
+
+**6. SQL AGENT**
+------------------------------------------------------------------------
+**Purpose**: Dynamic SQL query generation and execution
+**Responsibilities**:
+- Translate business questions into optimized SQL queries
+- Generate complex analytical queries (joins, aggregations, window functions)
+- Handle multiple data sources and schema variations
+- Optimize query performance
+
+**Inputs**: Business requirements, data schema, performance constraints
+**Outputs**: SQL queries, execution results, performance metrics
+**Advanced Capabilities**:
+- Multi-table join optimization
+- Complex aggregation queries
+- Time-series analysis queries
+- Dynamic query parameterization
+
+------------------------------------------------------------------------
+
+**7. INSIGHT AGENT (Advanced Analytics)**
+------------------------------------------------------------------------
+**Purpose**: Statistical analysis and predictive insights generation
+**Responsibilities**:
+- Perform statistical hypothesis testing
+- Generate trend forecasts and predictions
+- Detect anomalies and significant patterns
+- Create confidence intervals and statistical summaries
+
+**Inputs**: Cleaned datasets, analysis requirements, statistical parameters
+**Outputs**: Statistical insights, forecasts, anomaly alerts, test results
+**Technical Capabilities**:
+- Time series forecasting (ARIMA, Prophet, exponential smoothing)
+- Hypothesis testing (t-tests, chi-square, ANOVA)
+- Anomaly detection algorithms
+- Confidence interval calculations
+- Trend analysis and seasonality detection
+
+------------------------------------------------------------------------
+
+**8. CHART AGENT (Visualization Specialist)**
+------------------------------------------------------------------------
+**Purpose**: Intelligent chart generation and visualization specification
+**Responsibilities**:
+- Select appropriate chart types based on data characteristics
+- Generate interactive visualization specifications
+- Create multi-dimensional dashboard layouts
+- Optimize visual clarity and storytelling
+
+**Inputs**: Analysis results, data types, visualization requirements
+**Outputs**: Chart specifications, dashboard layouts, visual recommendations
+**Supported Visualizations**:
+- Statistical plots (bar, line, scatter, histogram, box plots)
+- Advanced charts (heatmaps, treemaps, sankey diagrams)
+- Interactive dashboards with filters and drill-downs
+- Geospatial visualizations
+
+------------------------------------------------------------------------
+
+**9. CRITIQUE AGENT (Quality Assurance)**
+------------------------------------------------------------------------
+**Purpose**: Logical consistency review and error detection
+**Responsibilities**:
+- Validate statistical conclusions for logical errors
+- Check data interpretation accuracy
+- Identify potential biases or misleading conclusions
+- Ensure methodological soundness
+
+**Inputs**: Agent outputs, analysis results, business context
+**Outputs**: Quality assessments, error flags, improvement suggestions
+**Quality Checks**:
+- Statistical significance validation
+- Logical consistency verification
+- Bias detection in conclusions
+- Methodological review
+
+------------------------------------------------------------------------
+
+**10. DEBATE AGENT (Multi-perspective Analysis)**
+------------------------------------------------------------------------
+**Purpose**: Simulate multiple reasoning perspectives for complex problems
+**Responsibilities**:
+- Generate alternative interpretations of data
+- Explore conflicting hypotheses
+- Simulate debate between different analytical approaches
+- Strengthen conclusions through adversarial analysis
+
+**Inputs**: Initial conclusions, alternative hypotheses, domain context
+**Outputs**: Multiple perspectives, strengthened conclusions, uncertainty estimates
+**Debate Strategies**:
+- Pro/con analysis generation
+- Alternative hypothesis exploration
+- Assumption challenging
+- Confidence level adjustments
+
+------------------------------------------------------------------------
+
+**11. NARRATIVE AGENT (Business Storytelling)**
+------------------------------------------------------------------------
+**Purpose**: Transform technical insights into compelling business narratives
+**Responsibilities**:
+- Create human-readable stories from data insights
+- Adapt communication style to audience (executives, analysts, operators)
+- Structure findings with clear business implications
+- Generate actionable recommendations
+
+**Inputs**: Technical insights, audience profiles, business context
+**Outputs**: Business narratives, executive summaries, recommendations
+**Narrative Styles**:
+- Executive dashboard summaries
+- Detailed analytical reports
+- Actionable insight highlighting
+- Business impact storytelling
+
+------------------------------------------------------------------------
+
+**12. REPORT GENERATOR AGENT (Document Assembly)**
+------------------------------------------------------------------------
+**Purpose**: Comprehensive report compilation and formatting
+**Responsibilities**:
+- Combine narratives, charts, and insights into cohesive reports
+- Apply consistent formatting and branding
+- Generate multiple output formats (PDF, PowerPoint, HTML)
+- Create executive summaries and detailed appendices
+
+**Inputs**: All agent outputs, formatting templates, brand guidelines
+**Outputs**: Professional business reports, presentations, summaries
+**Report Components**:
+- Executive summary
+- Key findings and insights
+- Supporting visualizations
+- Methodology appendix
+- Actionable recommendations
+
+========================================================================
+**LANGGRAPH ORCHESTRATION FLOW**
+========================================================================
+
+```python
+# LangGraph Node Definitions and Flow Control
+
+from langgraph import Graph, Node
+from langchain.schema import BaseMessage
+
+class EnterpriseInsightsGraph:
+    def __init__(self):
+        self.graph = Graph()
+        self.setup_agents()
+        self.define_flow()
+    
+    def setup_agents(self):
+        # Agent Node Definitions
+        self.planning_node = Node("planning_agent", self.planning_agent_func)
+        self.query_node = Node("query_agent", self.query_agent_func)
+        self.retrieval_node = Node("retrieval_agent", self.retrieval_agent_func)
+        self.data_node = Node("data_agent", self.data_agent_func)
+        self.cleaner_node = Node("cleaner_agent", self.cleaner_agent_func)
+        self.sql_node = Node("sql_agent", self.sql_agent_func)
+        self.insight_node = Node("insight_agent", self.insight_agent_func)
+        self.chart_node = Node("chart_agent", self.chart_agent_func)
+        self.critique_node = Node("critique_agent", self.critique_agent_func)
+        self.debate_node = Node("debate_agent", self.debate_agent_func)
+        self.narrative_node = Node("narrative_agent", self.narrative_agent_func)
+        self.report_node = Node("report_agent", self.report_agent_func)
+    
+    def define_flow(self):
+        # Entry Points
+        self.graph.add_edge("START", "planning_agent")
+        
+        # Planning Agent Routing
+        self.graph.add_conditional_edge(
+            "planning_agent",
+            self.route_based_on_query_type,
+            {
+                "data_exploration": "data_agent",
+                "insight_generation": "query_agent",
+                "visualization": "chart_agent",
+                "complex_analysis": "parallel_execution"
+            }
+        )
+        
+        # Parallel Execution Branch
+        self.graph.add_edge("parallel_execution", ["query_agent", "retrieval_agent"])
+        
+        # Sequential Flow Chains
+        self.graph.add_edge("query_agent", "retrieval_agent")
+        self.graph.add_edge("retrieval_agent", "sql_agent")
+        self.graph.add_edge("data_agent", "cleaner_agent")
+        self.graph.add_edge("cleaner_agent", "insight_agent")
+        
+        # Analysis Convergence
+        self.graph.add_edge(["sql_agent", "insight_agent"], "chart_agent")
+        
+        # Quality Control Layer
+        self.graph.add_edge("chart_agent", "critique_agent")
+        self.graph.add_conditional_edge(
+            "critique_agent",
+            self.quality_check_router,
+            {
+                "pass": "debate_agent",
+                "fail": "sql_agent",  # Retry failed agents
+                "partial": "insight_agent"
+            }
+        )
+        
+        # Final Output Generation
+        self.graph.add_edge("debate_agent", "narrative_agent")
+        self.graph.add_edge("narrative_agent", "report_agent")
+        self.graph.add_edge("report_agent", "END")
+    
+    def route_based_on_query_type(self, state):
+        query_type = state.get("query_type")
+        complexity = state.get("complexity_score", 0)
+        
+        if "upload" in query_type:
+            return "data_exploration"
+        elif complexity > 0.7:
+            return "complex_analysis"
+        elif "chart" in query_type or "visualize" in query_type:
+            return "visualization"
+        else:
+            return "insight_generation"
+    
+    def quality_check_router(self, state):
+        quality_score = state.get("quality_score", 0)
+        error_flags = state.get("error_flags", [])
+        
+        if quality_score > 0.8 and not error_flags:
+            return "pass"
+        elif quality_score < 0.4:
+            return "fail"
+        else:
+            return "partial"
+
+# State Management Schema
+class AgentState(TypedDict):
+    user_query: str
+    file_data: Optional[pd.DataFrame]
+    query_type: str
+    complexity_score: float
+    retrieved_context: List[str]
+    data_profile: Dict
+    cleaned_data: Optional[pd.DataFrame]
+    sql_results: Optional[pd.DataFrame]
+    insights: Dict
+    chart_specs: Dict
+    quality_score: float
+    error_flags: List[str]
+    narrative: str
+    final_report: str
+    execution_trace: List[str]
+```
+
+**AGENT COMMUNICATION PROTOCOL:**
+
+```
+State Passing Schema:
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ Planning Agent  │───▶│ Shared State    │───▶│ Target Agent    │
+│ Decision        │    │ {               │    │ Execution       │
+│                 │    │   "context": {} │    │                 │
+│                 │    │   "data": {}    │    │                 │
+│                 │    │   "params": {}  │    │                 │
+│                 │    │ }               │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+**ERROR HANDLING & RETRY LOGIC:**
+
+```python
+# Retry Strategy Implementation
+class AgentRetryStrategy:
+    def __init__(self, max_retries=3, backoff_factor=2):
+        self.max_retries = max_retries
+        self.backoff_factor = backoff_factor
+    
+    async def execute_with_retry(self, agent_func, state):
+        for attempt in range(self.max_retries):
+            try:
+                result = await agent_func(state)
+                if self.validate_result(result):
+                    return result
+            except Exception as e:
+                if attempt == self.max_retries - 1:
+                    return self.fallback_response(e, state)
+                await asyncio.sleep(self.backoff_factor ** attempt)
+        
+        return self.fallback_response("Max retries exceeded", state)
+```
+
+**STREAMING & REAL-TIME UPDATES:**
+
+- Each agent publishes progress updates to WebSocket connections
+- Frontend receives real-time agent execution status
+- Partial results streaming for long-running analyses
+- User can cancel long-running operations
+
+**PERFORMANCE OPTIMIZATION:**
+
+- Agent result caching for similar queries
+- Parallel agent execution where possible
+- Smart agent skipping based on query requirements
+- Resource pooling for computational agents
+
+**EXTENSIBILITY FRAMEWORK:**
+
+- Plugin architecture for new specialized agents
+- Custom agent templates for domain-specific needs
+- Agent configuration management
+- Dynamic agent loading and orchestration updates

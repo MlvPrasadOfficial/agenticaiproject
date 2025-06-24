@@ -1,0 +1,115 @@
+**Project Title:** Enterprise Insights Copilot (Rebuild Version)
+
+**Project Description:**
+
+We are rebuilding the entire "Enterprise Insights Copilot" project from scratch based on the original version hosted at: [https://github.com/MlvPrasadOfficial/enterprise-insights-copilot](https://github.com/MlvPrasadOfficial/enterprise-insights-copilot). The aim is to create a highly sophisticated, production-ready, full-stack GenAI-powered Business Intelligence assistant capable of handling complex enterprise data, generating actionable insights, producing visualizations, narratives, and end-to-end business reports using cutting-edge AI agents and orchestration frameworks.
+
+---
+
+**Full Build Map:**
+
+**Phase 1: Initial Setup**
+
+* Create monorepo structure (frontend + backend).
+* Backend scaffold with FastAPI (async ready).
+* Frontend scaffold with Next.js (SSR ready) + TailwindCSS dark theme with glassmorphism.
+* Environment setup for local Ollama LLaMA 3.1 serving.
+* Pinecone vector store account and API keys configured.
+
+**Phase 2: File Upload & Data Ingestion Module**
+
+* Upload API with schema validation.
+* Auto column-type inference (categorical, numerical, date).
+* Generate column profile summary.
+* Store file metadata in database.
+* Trigger Data Agent and Cleaner Agent immediately after successful upload.
+
+**Phase 3: Core LLM & RAG Setup**
+
+* Integrate Ollama LLaMA 3.1 model locally.
+* Embed uploaded data using embedding models.
+* Store embeddings into Pinecone.
+* Validate retrieval quality for dataset-grounded queries.
+
+**Phase 4: Multi-Agent Framework Design**
+
+* Build Planning Agent (central orchestrator): Analyzes user query, orchestrates downstream agents based on query type.
+* Build Query Agent: Parses and understands user intent.
+* Build Retrieval Agent: Fetches relevant data context from Pinecone.
+* Build Data Agent: Performs exploratory data analysis, feature engineering, column profiling.
+* Build Cleaner Agent: Handles missing values, standardizes units, detects outliers.
+* Build SQL Agent: Generates SQL queries dynamically for structured analysis.
+* Build Insight Agent: Performs advanced statistical analysis, hypothesis testing, trend forecasting, and anomaly detection.
+* Build Chart Agent: Generates chart specifications for visualizations (bar, line, area, scatter, dashboards).
+* Build Critique Agent: Reviews agent outputs for logical consistency and detects potential reasoning gaps.
+* Build Debate Agent: Simulates multiple reasoning paths to resolve conflicting interpretations.
+* Build Narrative Agent: Crafts human-like narratives and contextual business stories.
+* Build Report Generator Agent: Compiles narrative, insights, charts into full professional reports.
+
+**Phase 5: Orchestration Layer (LangGraph + LangChain)**
+
+* Build LangGraph node-based agent orchestration.
+* Define control flow for each agent based on trigger events.
+* Full streaming capability via LangChain Runnable interface.
+* Complete LangSmith integration for tracing, debugging, and evaluation.
+
+**LangGraph Orchestration Flowchart:**
+
+flowchart TD
+FileUpload --> DataAgent
+FileUpload --> CleanerAgent
+UserQuery --> PlanningAgent
+PlanningAgent --> QueryAgent
+PlanningAgent --> RetrievalAgent
+PlanningAgent --> SQLAgent
+PlanningAgent --> InsightAgent
+PlanningAgent --> ChartAgent
+SQLAgent --> CritiqueAgent
+InsightAgent --> CritiqueAgent
+ChartAgent --> CritiqueAgent
+CritiqueAgent --> DebateAgent
+DebateAgent --> NarrativeAgent
+NarrativeAgent --> ReportGeneratorAgent
+ReportGeneratorAgent --> FinalOutput
+
+**Phase 6: Frontend Feature Build**
+
+* File Upload Interface with progress tracking.
+* Query Box (chat-like interface with streaming answers).
+* Insight Bubble rendering with highlight summaries.
+* Visualization Dashboard with dynamic charts.
+* Full Report download panel.
+* Backend Agent Flow visualizer (for debug/tracing view).
+
+**Phase 7: Deployment & CI/CD Pipeline**
+
+* Backend deployment to Render (no Docker).
+* Frontend deployment to Vercel.
+* GitHub Actions setup for CI/CD with automated tests.
+* Secrets management for secure API key usage.
+
+**Phase 8: Testing & Stress Validation**
+
+* Pytest coverage for all agents.
+* Synthetic stress dataset generation for testing outlier, missing value, inconsistent data formats.
+* Edge case evaluations to ensure agent robustness.
+
+**Phase 9: Monitoring, Logging & Observability**
+
+* Centralized logging for agent decisions.
+* Retry logic for LLM failures.
+* LangSmith session storage for historical traces.
+
+**Phase 10: Future Scope Extension Modules**
+
+* Multi-tenant SaaS structure.
+* RBAC user authentication.
+* External data warehouse integrations.
+* Domain-specific fine-tuning for specialized industries.
+* API integrations (Snowflake, Salesforce, etc.).
+* Mobile responsive redesign.
+
+---
+
+**Deployment Goal:**
+Develop a fully automated, production-grade AI Copilot capable of handling diverse enterprise use-cases in business intelligence, streamlining data exploration, insights generation, visualization, and report automation—leveraging cutting-edge GenAI techniques and robust multi-agent coordination.

@@ -1,0 +1,21 @@
+date,product,category,region,sales_amount,quantity,customer_segment
+2024-01-15,Laptop Pro,Electronics,North,1299.99,1,Enterprise
+2024-01-16,Office Chair,Furniture,South,299.99,2,SMB
+2024-01-17,Coffee Maker,Appliances,East,89.99,1,Consumer
+2024-01-18,Smartphone,Electronics,West,799.99,1,Consumer
+2024-01-19,Standing Desk,Furniture,North,599.99,1,Enterprise
+2024-01-20,Tablet,Electronics,South,399.99,1,Consumer
+2024-01-21,Wireless Mouse,Electronics,East,49.99,3,SMB
+2024-01-22,Monitor,Electronics,West,299.99,2,Enterprise
+2024-01-23,Keyboard,Electronics,North,79.99,1,SMB
+2024-01-24,Headphones,Electronics,South,199.99,1,Consumer
+2024-01-25,Desk Lamp,Furniture,East,79.99,2,SMB
+2024-01-26,Webcam,Electronics,West,129.99,1,Enterprise
+2024-01-27,Printer,Electronics,North,249.99,1,SMB
+2024-01-28,Water Bottle,Accessories,South,19.99,5,Consumer
+2024-01-29,Phone Case,Accessories,East,29.99,2,Consumer
+2024-01-30,Cable Set,Electronics,West,39.99,3,Enterprise
+2024-02-01,Gaming Mouse,Electronics,North,89.99,1,Consumer
+2024-02-02,Ergonomic Chair,Furniture,South,449.99,1,Enterprise
+2024-02-03,Smart Watch,Electronics,East,299.99,1,Consumer
+2024-02-04,Bluetooth Speaker,Electronics,West,149.99,2,SMB

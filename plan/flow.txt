@@ -1,0 +1,186 @@
+**ENTERPRISE INSIGHTS COPILOT - PROJECT FLOW DIAGRAM**
+
+```mermaid
+flowchart TD
+    %% User Entry Points
+    A[User Uploads File] --> B[File Upload API]
+    C[User Submits Query] --> D[Query Processing]
+    
+    %% File Upload Flow
+    B --> E[Schema Validation]
+    E --> F[Column Type Inference]
+    F --> G[Data Profiling]
+    G --> H[Store Metadata in DB]
+    H --> I[Trigger Data Agent]
+    H --> J[Trigger Cleaner Agent]
+    
+    %% Query Processing Flow
+    D --> K[Planning Agent]
+    K --> L{Query Type Analysis}
+    
+    %% Multi-Agent Orchestration Branches
+    L -->|Data Exploration| M[Query Agent]
+    L -->|Insights Needed| N[Retrieval Agent]
+    L -->|Analysis Required| O[SQL Agent]
+    L -->|Statistical Analysis| P[Insight Agent]
+    L -->|Visualization| Q[Chart Agent]
+    
+    %% Agent Execution Flow
+    M --> R[Pinecone Vector Search]
+    N --> R
+    I --> S[Exploratory Data Analysis]
+    J --> T[Data Cleaning & Standardization]
+    O --> U[Dynamic SQL Generation]
+    P --> V[Statistical Analysis & Forecasting]
+    Q --> W[Chart Specification Generation]
+    
+    %% Quality Control Layer
+    U --> X[Critique Agent]
+    V --> X
+    W --> X
+    X --> Y{Quality Check}
+    Y -->|Pass| Z[Debate Agent]
+    Y -->|Fail| AA[Agent Re-execution]
+    AA --> X
+    
+    %% Output Generation
+    Z --> BB[Multi-perspective Analysis]
+    BB --> CC[Narrative Agent]
+    CC --> DD[Human-like Story Generation]
+    DD --> EE[Report Generator Agent]
+    EE --> FF[Comprehensive Business Report]
+    
+    %% Frontend Rendering
+    FF --> GG[Frontend Dashboard]
+    GG --> HH[Real-time Streaming UI]
+    HH --> II[Insight Bubbles]
+    HH --> JJ[Interactive Visualizations]
+    HH --> KK[Download Report Panel]
+    
+    %% System Infrastructure
+    LL[Ollama LLaMA 3.1] --> K
+    LL --> M
+    LL --> N
+    LL --> I
+    LL --> J
+    LL --> O
+    LL --> P
+    LL --> Q
+    LL --> X
+    LL --> Z
+    LL --> CC
+    LL --> EE
+    
+    MM[Pinecone Vector Store] --> R
+    NN[FastAPI Backend] --> B
+    NN --> D
+    OO[Next.js Frontend] --> GG
+    PP[LangGraph Orchestration] --> K
+    QQ[LangSmith Tracing] --> PP
+```
+
+**SYSTEM ARCHITECTURE OVERVIEW:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    FRONTEND LAYER (Next.js)                    │
+├─────────────────────────────────────────────────────────────────┤
+│  • File Upload Interface    • Chat Query Interface             │
+│  • Visualization Dashboard  • Report Download Panel            │
+│  • Agent Flow Visualizer    • Real-time Streaming             │
+└─────────────────────────────────────────────────────────────────┘
+                                    │
+                               HTTP/WebSocket
+                                    │
+┌─────────────────────────────────────────────────────────────────┐
+│                     API LAYER (FastAPI)                        │
+├─────────────────────────────────────────────────────────────────┤
+│  • Upload Endpoints         • Query Processing Endpoints       │
+│  • Authentication           • Streaming Response Handlers      │
+│  • Error Handling           • Rate Limiting                    │
+└─────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │
+┌─────────────────────────────────────────────────────────────────┐
+│                 ORCHESTRATION LAYER (LangGraph)                │
+├─────────────────────────────────────────────────────────────────┤
+│  • Agent Workflow Management    • Control Flow Definition      │
+│  • Parallel Agent Execution     • Error Recovery               │
+│  • State Management             • Agent Communication          │
+└─────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │
+┌─────────────────────────────────────────────────────────────────┐
+│                    AGENT LAYER (11 Agents)                     │
+├─────────────────────────────────────────────────────────────────┤
+│ Planning │ Query │ Retrieval │ Data │ Cleaner │ SQL │ Insight   │
+│ Critique │ Debate │ Narrative │ Report Generator               │
+└─────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │
+┌─────────────────────────────────────────────────────────────────┐
+│                     AI/ML LAYER                                │
+├─────────────────────────────────────────────────────────────────┤
+│  • Ollama LLaMA 3.1 (Local)     • Embedding Models            │
+│  • Pinecone Vector Store         • LangSmith Tracing           │
+│  • Statistical Analysis Libraries • Chart Generation Libraries │
+└─────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │
+┌─────────────────────────────────────────────────────────────────┐
+│                      DATA LAYER                                │
+├─────────────────────────────────────────────────────────────────┤
+│  • File Storage                 • Metadata Database            │
+│  • Vector Embeddings            • Session State Storage        │
+│  • Generated Reports            • User Preferences             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**DEPLOYMENT FLOW:**
+
+```
+Development → Testing → Staging → Production
+
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│             │    │             │    │             │    │             │
+│ Local Dev   │    │ GitHub      │    │ Render      │    │ Vercel      │
+│ Environment │───▶│ Actions     │───▶│ (Backend)   │───▶│ (Frontend)  │
+│             │    │ CI/CD       │    │             │    │             │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+      │                    │                    │                    │
+      │                    │                    │                    │
+   Ollama              Automated           FastAPI             Next.js
+   LLaMA 3.1            Testing           Deployment          Deployment
+      │                    │                    │                    │
+   Pinecone             Pytest               Docker               Static
+   Vector DB            Coverage             Free Tier           Build
+```
+
+**DATA FLOW SEQUENCE:**
+
+1. **File Upload**: User → Frontend → FastAPI → Validation → Storage → Agent Trigger
+2. **Query Processing**: User → Frontend → FastAPI → Planning Agent → Multi-Agent Chain
+3. **Vector Retrieval**: Query → Embedding → Pinecone Search → Context Retrieval
+4. **Analysis Pipeline**: Data Agent → Cleaner Agent → SQL Agent → Insight Agent
+5. **Quality Control**: Critique Agent → Debate Agent → Validation Loop
+6. **Output Generation**: Narrative Agent → Report Generator → Formatted Output
+7. **Frontend Rendering**: Streaming Response → Real-time UI Updates → User Interface
+
+**ERROR HANDLING FLOW:**
+
+```
+Error Detection → Agent Retry → Fallback Strategy → User Notification
+
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│ LLM Timeout │    │ Retry with  │    │ Simplified  │    │ Error       │
+│ Agent Fail  │───▶│ Exponential │───▶│ Fallback    │───▶│ Message to  │
+│ API Error   │    │ Backoff     │    │ Response    │    │ User        │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+```
+
+**MONITORING & OBSERVABILITY:**
+
+- **LangSmith**: Agent execution tracing and debugging
+- **Centralized Logging**: All agent decisions and system events
+- **Performance Metrics**: Response times, success rates, error frequencies
+- **User Analytics**: Query patterns, feature usage, report generation stats

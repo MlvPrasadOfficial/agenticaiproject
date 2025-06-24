@@ -1,5 +1,7 @@
 name: Enterprise Insights CI/CD
 
+# Repository: https://github.com/MlvPrasadOfficial/agenticaiproject
+
 on:
   push:
     branches: [ main, develop ]
@@ -56,8 +58,7 @@ jobs:
     #   run: |
     #     cd frontend
     #     npm run test
-        
-  deploy-backend:
+          deploy-backend:
     needs: [backend-tests, frontend-tests]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -65,11 +66,22 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
     - name: Deploy to Render
       env:
         RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-      # Replace with actual deployment command for Render
-      run: echo "Backend deployed to Render"
+      run: |
+        # Install Render CLI if available
+        # curl -s https://raw.githubusercontent.com/render-examples/render-cli/main/render-cli.sh | bash
+        
+        # For now, using render deploy hooks for simplicity
+        # Replace the URL with your actual deploy hook from Render dashboard
+        curl -s "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+        echo "Backend deployed to Render via deploy hook"
       
   deploy-frontend:
     needs: [backend-tests, frontend-tests]
@@ -79,8 +91,20 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install Vercel CLI
+      run: npm install -g vercel
+        
     - name: Deploy to Vercel
       env:
         VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      # Replace with actual deployment command for Vercel
-      run: echo "Frontend deployed to Vercel"
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      run: |
+        cd frontend
+        # Deploy using Vercel CLI
+        vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}

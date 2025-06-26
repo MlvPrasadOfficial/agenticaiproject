@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Agent Output Styling</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e293b 0%, #7c3aed 50%, #1e293b 100%);
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body class="text-white p-8">
+    <h1 class="text-2xl font-bold mb-8">Agent Output Styling Test</h1>
+    
+    <div class="space-y-6">
+        <!-- Test Different Output Types -->
+        <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
+            <h2 class="text-lg font-semibold mb-4">Sample Agent Outputs</h2>
+            <div id="output-container" class="space-y-3"></div>
+        </div>
+    </div>
+
+    <script>
+        // Parse and style agent output based on prefix
+        function parseOutputWithStyle(output) {
+            // Extract prefix and text
+            const prefixMatch = output.match(/^\[(BACKEND|PLACEHOLDER|DEMO|REAL|SAMPLE)\](.*)$/);
+            
+            if (prefixMatch) {
+                const [, prefix, text] = prefixMatch;
+                const cleanText = text.trim();
+                
+                let badgeColor = '';
+                let icon = '';
+                
+                switch (prefix) {
+                    case 'BACKEND':
+                    case 'REAL':
+                        badgeColor = 'bg-green-500/20 text-green-300 border-green-400';
+                        icon = '🟢';
+                        break;
+                    case 'PLACEHOLDER':
+                        badgeColor = 'bg-yellow-500/20 text-yellow-300 border-yellow-400';
+                        icon = '🟡';
+                        break;
+                    case 'DEMO':
+                    case 'SAMPLE':
+                        badgeColor = 'bg-blue-500/20 text-blue-300 border-blue-400';
+                        icon = '🔵';
+                        break;
+                    default:
+                        badgeColor = 'bg-white/10 text-white/60 border-white/40';
+                        icon = '⚪';
+                }
+                
+                return {
+                    hasPrefix: true,
+                    prefix,
+                    text: cleanText,
+                    badgeColor,
+                    icon
+                };
+            }
+            
+            // No prefix, return as is
+            return {
+                hasPrefix: false,
+                prefix: '',
+                text: output,
+                badgeColor: 'bg-white/10 text-white/60 border-white/40',
+                icon: '⚪'
+            };
+        }
+
+        // Sample outputs to test
+        const sampleOutputs = [
+            '[BACKEND] Query analyzed successfully',
+            '[BACKEND] Processing strategy: SQL + Retrieval',
+            '[PLACEHOLDER] Analyzing query intent',
+            '[PLACEHOLDER] Natural language processed',
+            '[DEMO] File uploaded successfully',
+            '[DEMO] Processing file format',
+            '[REAL] 15 columns detected',
+            '[SAMPLE] Sample data loaded',
+            'Regular output without prefix'
+        ];
+
+        // Render outputs
+        const container = document.getElementById('output-container');
+        
+        sampleOutputs.forEach((output, idx) => {
+            const parsed = parseOutputWithStyle(output);
+            
+            const outputDiv = document.createElement('div');
+            outputDiv.className = 'bg-black/30 rounded-lg p-3';
+            outputDiv.innerHTML = `
+                <div class="flex items-start space-x-2">
+                    <span class="text-white/50">•</span>
+                    <div class="flex-1 flex items-start space-x-2">
+                        ${parsed.hasPrefix ? `
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${parsed.badgeColor}">
+                                <span class="mr-1">${parsed.icon}</span>
+                                ${parsed.prefix}
+                            </span>
+                        ` : ''}
+                        <span class="flex-1 text-sm text-white/80">${parsed.text}</span>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(outputDiv);
+        });
+    </script>
+</body>
+</html>

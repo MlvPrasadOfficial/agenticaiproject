@@ -273,7 +273,15 @@ async def get_embedding_status(file_id: str):
 
 @router.get("/query-status/{session_id}")
 async def get_query_status(session_id: str):
-    """Get real-time agent processing status for active query"""
+    """Get real-time agent processing status for active query
+    
+    Returns agent outputs marked as:
+    - [REAL] - When actual agents are executed and return real outputs
+    - [PLACEHOLDER] - When simulating agent behavior (current implementation)
+    - [BACKEND] - When real backend processing occurs but agents are not fully connected
+    
+    In production with full agent orchestration, all outputs would be [REAL]
+    """
     
     try:
         # Extract timestamp from session_id to simulate progressive agent execution
@@ -291,9 +299,9 @@ async def get_query_status(session_id: str):
         sql_status = "idle"
         
         planning_outputs = [
-            "[BACKEND] Analyzing query intent",
-            "[BACKEND] Determining processing strategy",
-            "[BACKEND] Identifying required agents..."
+            "[PLACEHOLDER] Analyzing query intent",
+            "[PLACEHOLDER] Determining processing strategy",
+            "[PLACEHOLDER] Identifying required agents..."
         ]
         
         query_outputs = []
@@ -309,16 +317,16 @@ async def get_query_status(session_id: str):
                 current_agent = "query-agent"
                 
                 planning_outputs = [
-                    "[BACKEND] Query analyzed successfully",
-                    "[BACKEND] Processing strategy: SQL + Retrieval",
-                    "[BACKEND] Routing to Query Agent"
+                    "[PLACEHOLDER] Query analyzed successfully",
+                    "[PLACEHOLDER] Processing strategy: SQL + Retrieval", 
+                    "[PLACEHOLDER] Routing to Query Agent"
                 ]
                 
                 query_outputs = [
-                    "[BACKEND] Natural language processed",
-                    "[BACKEND] Intent: Find highest salary",
-                    "[BACKEND] Query type: Aggregation",
-                    "[BACKEND] Preparing SQL generation..."
+                    "[PLACEHOLDER] Natural language processed",
+                    "[PLACEHOLDER] Intent: Find highest salary",
+                    "[PLACEHOLDER] Query type: Aggregation",
+                    "[PLACEHOLDER] Preparing SQL generation..."
                 ]
                 
                 # If session is "older", progress to SQL
@@ -327,10 +335,10 @@ async def get_query_status(session_id: str):
                 current_agent = "sql-agent"
                 
                 sql_outputs = [
-                    "[BACKEND] SQL query generated: SELECT MAX(salary) FROM data",
-                    "[BACKEND] Executing query on uploaded dataset",
-                    "[BACKEND] Processing aggregation results...",
-                    "[BACKEND] Retrieving highest salary record"
+                    "[PLACEHOLDER] SQL query generated: SELECT MAX(salary) FROM data",
+                    "[PLACEHOLDER] Executing query on uploaded dataset",
+                    "[PLACEHOLDER] Processing aggregation results...",
+                    "[PLACEHOLDER] Retrieving highest salary record"
                 ]
                 
             except:

@@ -607,6 +607,57 @@ export default function Home() {
     }
   }
 
+  // Parse and style agent output based on prefix
+  const parseOutputWithStyle = (output: string) => {
+    // Extract prefix and text
+    const prefixMatch = output.match(/^\[(BACKEND|PLACEHOLDER|DEMO|REAL|SAMPLE)\](.*)$/)
+    
+    if (prefixMatch) {
+      const [, prefix, text] = prefixMatch
+      const cleanText = text.trim()
+      
+      let badgeColor = ''
+      let icon = ''
+      
+      switch (prefix) {
+        case 'BACKEND':
+        case 'REAL':
+          badgeColor = 'bg-green-500/20 text-green-300 border-green-400'
+          icon = '🟢'
+          break
+        case 'PLACEHOLDER':
+          badgeColor = 'bg-yellow-500/20 text-yellow-300 border-yellow-400'
+          icon = '🟡'
+          break
+        case 'DEMO':
+        case 'SAMPLE':
+          badgeColor = 'bg-blue-500/20 text-blue-300 border-blue-400'
+          icon = '🔵'
+          break
+        default:
+          badgeColor = 'bg-white/10 text-white/60 border-white/40'
+          icon = '⚪'
+      }
+      
+      return {
+        hasPrefix: true,
+        prefix,
+        text: cleanText,
+        badgeColor,
+        icon
+      }
+    }
+    
+    // No prefix, return as is
+    return {
+      hasPrefix: false,
+      prefix: '',
+      text: output,
+      badgeColor: 'bg-white/10 text-white/60 border-white/40',
+      icon: '⚪'
+    }
+  }
+
   if (!isClient) {
     return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
       <div className="text-white text-lg">Loading...</div>
@@ -831,13 +882,24 @@ export default function Home() {
                     
                     {outputs.length > 0 && (
                       <div className="bg-black/30 rounded-lg p-3 mt-3">
-                        <div className="text-xs text-white/80 space-y-1">
-                          {outputs.map((output, idx) => (
-                            <div key={idx} className="flex items-start space-x-2">
-                              <span className="text-white/50">•</span>
-                              <span>{output}</span>
-                            </div>
-                          ))}
+                        <div className="text-xs text-white/80 space-y-2">
+                          {outputs.map((output, idx) => {
+                            const parsed = parseOutputWithStyle(output)
+                            return (
+                              <div key={idx} className="flex items-start space-x-2">
+                                <span className="text-white/50">•</span>
+                                <div className="flex-1 flex items-start space-x-2">
+                                  {parsed.hasPrefix && (
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${parsed.badgeColor}`}>
+                                      <span className="mr-1">{parsed.icon}</span>
+                                      {parsed.prefix}
+                                    </span>
+                                  )}
+                                  <span className="flex-1">{parsed.text}</span>
+                                </div>
+                              </div>
+                            )
+                          })}
                         </div>
                       </div>
                     )}

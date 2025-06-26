@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2, Download, BarChart3, FileText } from 'lucide-react';
 import { apiClient, type QueryRequest, type QueryResponse } from '@/lib/api';
-import { downloadBlob } from '@/lib/utils';
+import { downloadBlob, generateUniqueId } from '@/lib/utils';
 
 interface Message {
   id: string;
@@ -49,7 +49,7 @@ export function ChatInterface({
   const addMessage = (message: Omit<Message, 'id' | 'timestamp'>) => {
     const newMessage: Message = {
       ...message,
-      id: Date.now().toString(),
+      id: generateUniqueId(),
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, newMessage]);

@@ -1,0 +1,8 @@
+
+
+LEVEL 1 - ALL AGENTS Working
+level 2 - beauty ui
+level 2 - deployed success front end backend 
+level 3 - ollama cloud
+level 4 - ci cd github Actions/ pytest 
+level 5 - great readme

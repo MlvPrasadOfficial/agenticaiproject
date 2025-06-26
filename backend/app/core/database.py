@@ -22,12 +22,17 @@ metadata = MetaData()
 
 
 async def init_db():
-    """Initialize database tables"""
+    """Initialize database tables and required directories"""
     try:
+        # Create upload directory if it doesn't exist
+        os.makedirs(settings.UPLOAD_DIRECTORY, exist_ok=True)
+        print(f"✅ Upload directory created/verified: {settings.UPLOAD_DIRECTORY}")
+        
+        # Create database tables
         Base.metadata.create_all(bind=engine)
         print("✅ Database tables created successfully")
     except Exception as e:
-        print(f"❌ Error creating database tables: {e}")
+        print(f"❌ Error initializing database: {e}")
 
 
 def get_db():

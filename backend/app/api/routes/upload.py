@@ -72,6 +72,12 @@ async def upload_file(
                 "file_id": file_id,
                 "filename": file.filename,
                 "size": file.size,
+                "rows": basic_info.get("estimated_total_rows", "unknown"),
+                "columns": len(basic_info.get("columns", [])),
+                "preview_data": {
+                    "columns": basic_info.get("columns", []),
+                    "rows": basic_info.get("preview_rows_data", [])
+                },
                 "basic_info": basic_info,
                 "processing_status": "started",
                 "processing_url": f"/api/v1/upload/status/{file_id}"

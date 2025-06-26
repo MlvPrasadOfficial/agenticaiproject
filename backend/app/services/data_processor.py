@@ -26,12 +26,19 @@ class DataProcessor:
             
             # Quick peek at file structure
             if file_extension == '.csv':
-                # Read just first few rows
+                # Read just first few rows for preview
                 df_preview = pd.read_csv(file_path, nrows=5)
+                # Get full row count estimate
+                total_rows = sum(1 for line in open(file_path)) - 1  # subtract header
+                
+                # Convert preview to list of dictionaries
+                preview_rows = df_preview.to_dict('records')
+                
                 return {
                     "preview_rows": df_preview.shape[0],
                     "columns": list(df_preview.columns),
-                    "estimated_total_rows": "calculating...",
+                    "preview_rows_data": preview_rows,
+                    "estimated_total_rows": total_rows,
                     "file_size_mb": round(file_size / (1024*1024), 2)
                 }
             

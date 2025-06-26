@@ -10,7 +10,7 @@ class QueryRequest(BaseModel):
     file_id: Optional[str] = Field(None, description="File ID for data context")
     query_type: Optional[str] = Field(None, description="Type of query: analysis, visualization, insight")
     file_context: Optional[Dict[str, Any]] = Field(None, description="File context information")
-    timestamp: Optional[datetime] = Field(default_factory=datetime.now)
+    timestamp: Optional[datetime] = Field(default_factory=lambda: datetime.now())
     
     class Config:
         json_schema_extra = {

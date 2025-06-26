@@ -18,6 +18,9 @@ from app.agents.retrieval_agent import RetrievalAgent
 from app.agents.sql_agent import SQLAgent
 from app.agents.insight_agent import InsightAgent
 from app.agents.chart_agent import ChartAgent
+from app.agents.critique_agent import CritiqueAgent
+from app.agents.debate_agent import DebateAgent
+from app.agents.narrative_agent import NarrativeAgent
 from app.agents.report_agent import ReportAgent
 
 from app.core.config import settings
@@ -36,6 +39,9 @@ class AgentState(TypedDict):
     sql_results: Optional[Dict[str, Any]]
     insights: Dict[str, Any]
     chart_specs: Dict[str, Any]
+    critique_feedback: Dict[str, Any]
+    debate_consensus: Dict[str, Any]
+    business_narrative: Dict[str, Any]
     quality_score: float
     error_flags: List[str]
     narrative: str
@@ -61,6 +67,9 @@ class AgentOrchestrator:
             "sql": SQLAgent(),
             "insight": InsightAgent(),
             "chart": ChartAgent(),
+            "critique": CritiqueAgent(),
+            "debate": DebateAgent(),
+            "narrative_gen": NarrativeAgent(),
             "report": ReportAgent()
         }
     
@@ -156,13 +165,13 @@ class AgentOrchestrator:
                 return state
         
         return agent_node
-    
     def _define_workflow_edges(self, graph: StateGraph):
         """Define the agent workflow edges"""
         
         # Entry point - start with planning
         graph.add_edge(START, "planning")
-          # Planning agent routes to appropriate agents based on query type
+        
+        # Planning agent routes to appropriate agents based on query type
         graph.add_conditional_edges(
             "planning",
             self._route_from_planning,
@@ -173,27 +182,40 @@ class AgentOrchestrator:
             }
         )
         
-        # Query processing flow - skip retrieval for now
-        graph.add_edge("query", "sql")
+        # Query processing flow - include data analysis and retrieval
+        graph.add_edge("query", "data")
+        graph.add_edge("data", "retrieval")
+        graph.add_edge("retrieval", "sql")
         
         # Analysis convergence
         graph.add_edge("sql", "insight")
         graph.add_edge("insight", "chart")
-          # Final output generation
-        graph.add_edge("chart", "report")
+          # Quality assurance and narrative generation pipeline
+        graph.add_edge("chart", "critique")
+        graph.add_edge("critique", "debate")
+        graph.add_edge("debate", "narrative_gen")
+        
+        # Final output generation
+        graph.add_edge("narrative_gen", "report")
         graph.add_edge("report", END)
+        
     def _route_from_planning(self, state: AgentState) -> str:
         """Route based on planning agent's decision"""
         query_type = state.get("query_type", "").lower()
         complexity = state.get("complexity_score", 0.0)
         
+        print(f"🔍 PLANNING ROUTER DEBUG: query_type = {query_type}, complexity = {complexity}")
+        
         # Skip data exploration for now since data agent is disabled
         if complexity > 0.7:
-            return "complex_analysis"
+            route = "complex_analysis"
         elif "chart" in query_type or "visualize" in query_type:
-            return "visualization"
+            route = "visualization"
         else:
-            return "insight_generation"
+            route = "insight_generation"
+            
+        print(f"🔍 PLANNING ROUTER DEBUG: Routing to {route}")
+        return route
     
     def _quality_control_router(self, state: AgentState) -> str:
         """Route based on quality control results"""
@@ -226,7 +248,7 @@ class AgentOrchestrator:
         self,
         session_id: str,
         user_query: str,
-        file_context: Optional[List[str]] = None,
+        file_context: Optional[Dict[str, Any]] = None,
         query_type: Optional[str] = None
     ) -> Dict[str, Any]:
         """Process user query through agent workflow"""
@@ -278,8 +300,7 @@ class AgentOrchestrator:
                     print(f"🔍 ORCHESTRATOR DEBUG: Files in upload dir: {all_files}")
                 except Exception as e:
                     print(f"🔍 ORCHESTRATOR DEBUG: Error listing upload dir: {e}")
-        
-        # Initialize state
+          # Initialize state
         state = {
             "session_id": session_id,
             "user_query": user_query,
@@ -294,6 +315,9 @@ class AgentOrchestrator:
             "sql_results": None,
             "insights": {},
             "chart_specs": {},
+            "critique_feedback": {},
+            "debate_consensus": {},
+            "business_narrative": {},
             "quality_score": 0.0,
             "error_flags": [],
             "narrative": "",
@@ -314,12 +338,14 @@ class AgentOrchestrator:
             print("🔍 ORCHESTRATOR DEBUG: Graph execution completed")
             print(f"🔍 ORCHESTRATOR DEBUG: Final state keys = {list(final_state.keys())}")
             print(f"🔍 ORCHESTRATOR DEBUG: Final state = {final_state}")
-            
-            # Compile final result
+              # Compile final result
             result = {
                 "session_id": session_id,
                 "insights": final_state.get("insights", {}),
                 "charts": final_state.get("chart_specs", {}),
+                "critique_feedback": final_state.get("critique_feedback", {}),
+                "debate_consensus": final_state.get("debate_consensus", {}),
+                "business_narrative": final_state.get("business_narrative", {}),
                 "narrative": final_state.get("narrative", ""),
                 "report": final_state.get("final_report", {}),
                 "execution_time": execution_time,
@@ -383,13 +409,11 @@ class AgentOrchestrator:
                 "timestamp": datetime.now().isoformat()
             }
         
-        except Exception as e:
-            yield {
+        except Exception as e:            yield {
                 "type": "error",
                 "error": str(e),
                 "timestamp": datetime.now().isoformat()
             }
-        
         finally:
             self.stream_queue = None
     
@@ -398,32 +422,46 @@ class AgentOrchestrator:
         file_id: str,
         file_data: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Trigger Data Agent and Cleaner Agent for file upload"""
-        
+        """Trigger Data Agent and Retrieval Agent for file upload"""
         state = AgentState()
         state.update({
             "session_id": f"upload_{file_id}",
             "file_data": file_data,
+            "file_path": file_data.get("file_path"),  # Extract file_path from processor result
             "query_type": "data_exploration"
         })
         
         try:
+            print(f"🔍 Processing file upload for file_id: {file_id}")
+            
             # Execute Data Agent
+            print("🔍 Executing Data Agent...")
             data_result = await self.agents["data"].execute(state)
             state["data_profile"] = data_result
+            print(f"✅ Data Agent completed: {data_result.get('status', 'unknown')}")
+              # Execute Retrieval Agent to index the data
+            print("🔍 Executing Retrieval Agent for indexing...")
+            retrieval_result = await self.agents["retrieval"].index_file_data(state)
+            state["vector_storage"] = retrieval_result
+            print(f"✅ Retrieval Agent completed: {retrieval_result.get('status', 'unknown')}")
+            print(f"📊 Vectors added: {retrieval_result.get('vectors_added', 0)}")
             
-            # Execute Cleaner Agent
-            cleaner_result = await self.agents["cleaner"].execute(state)
-            state["cleaned_data"] = cleaner_result
+            # Log vector count details if available
+            if 'vectors_before' in retrieval_result and 'vectors_after' in retrieval_result:
+                vectors_before = retrieval_result['vectors_before']
+                vectors_after = retrieval_result['vectors_after']
+                actual_added = retrieval_result.get('actual_vectors_added', vectors_after - vectors_before)
+                print(f"📊 Pinecone Vector Count - Before: {vectors_before}, After: {vectors_after}, Added: {actual_added}")
             
             return {
                 "file_id": file_id,
                 "data_profile": data_result,
-                "cleaning_results": cleaner_result,
+                "vector_storage": retrieval_result,
                 "status": "completed"
             }
         
         except Exception as e:
+            print(f"❌ Error in upload processing: {str(e)}")
             return {
                 "file_id": file_id,
                 "error": str(e),

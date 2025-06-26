@@ -6,7 +6,7 @@ import numpy as np
 from datetime import datetime
 import asyncio
 from sentence_transformers import SentenceTransformer
-import pinecone
+from pinecone import Pinecone, Index
 from pathlib import Path
 
 from app.agents.base_agent import BaseAgent
@@ -15,9 +15,9 @@ from app.core.config import settings
 
 class RetrievalAgent(BaseAgent):
     """Vector search and knowledge retrieval specialist using Pinecone"""
-    
     def __init__(self):
         super().__init__("Retrieval Agent")
+        self.name = "Retrieval Agent"  # Add explicit name attribute
         self.embedding_model = None
         self.pinecone_index = None
         self._initialize_components()
@@ -25,26 +25,32 @@ class RetrievalAgent(BaseAgent):
     def _initialize_components(self):
         """Initialize embedding model and Pinecone connection"""
         try:
-            # Initialize embedding model
-            self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+            # Initialize embedding model (1024 dimensions to match Pinecone index)
+            self.embedding_model = SentenceTransformer('all-roberta-large-v1')
+            print("✅ Using all-roberta-large-v1 model (1024 dimensions)")
             
-            # Initialize Pinecone (using legacy API)
+            # Initialize Pinecone (using new v3.0+ API)
             if hasattr(settings, 'PINECONE_API_KEY') and settings.PINECONE_API_KEY:
-                pinecone.init(
-                    api_key=settings.PINECONE_API_KEY,
-                    environment=getattr(settings, 'PINECONE_ENVIRONMENT', 'us-west1-gcp')
-                )
+                pc = Pinecone(api_key=settings.PINECONE_API_KEY)
                 
                 index_name = getattr(settings, 'PINECONE_INDEX_NAME', 'enterprise-insights')
-                if index_name in pinecone.list_indexes():
-                    self.pinecone_index = pinecone.Index(index_name)
+                
+                # List existing indexes
+                indexes = pc.list_indexes()
+                index_names = [idx.name for idx in indexes]
+                
+                if index_name in index_names:
+                    self.pinecone_index = pc.Index(index_name)
+                    print(f"✅ Connected to Pinecone index: {index_name}")
                 else:
-                    print(f"⚠️ Pinecone index '{index_name}' not found. Vector search will be limited.")
+                    print(f"⚠️ Pinecone index '{index_name}' not found. Available indexes: {index_names}")
             else:
                 print("⚠️ Pinecone API key not configured. Vector search will be simulated.")
                 
         except Exception as e:
             print(f"⚠️ Error initializing RetrievalAgent components: {e}")
+            import traceback
+            traceback.print_exc()
     
     async def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Execute retrieval operations based on query and context"""
@@ -77,10 +83,9 @@ class RetrievalAgent(BaseAgent):
                 "query": query,
                 "context_type": context_type,
                 "results": ranked_results,
-                "total_results": len(ranked_results),
-                "search_metadata": {
-                    "embedding_model": "all-MiniLM-L6-v2",
-                    "vector_dimension": 384,
+                "total_results": len(ranked_results),                "search_metadata": {
+                    "embedding_model": "all-roberta-large-v1",
+                    "vector_dimension": 1024,
                     "search_type": "semantic_similarity"
                 }
             }
@@ -245,18 +250,175 @@ class RetrievalAgent(BaseAgent):
             print(f"❌ {error_msg}")
             return {"error": error_msg}
     
+    async def index_file_data(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        """Index file data into Pinecone vector store during upload"""
+        try:
+            file_path = state.get("file_path")
+            data_profile = state.get("data_profile", {})
+            
+            if not file_path:
+                return {"error": "No file path provided for indexing"}
+            
+            print(f"🔄 Indexing file data from: {file_path}")
+            
+            # Get vector count before indexing
+            vectors_before = await self._get_pinecone_vector_count()
+            print(f"📊 Pinecone vectors before indexing: {vectors_before}")
+            
+            # Load and chunk the data for indexing
+            chunks = await self._prepare_file_chunks(file_path, data_profile)
+            
+            if not chunks:
+                return {
+                    "status": "no_data",
+                    "message": "No data chunks to index",
+                    "vectors_added": 0,
+                    "vectors_before": vectors_before,
+                    "vectors_after": vectors_before
+                }
+            
+            # Generate embeddings and store in Pinecone
+            vectors_added = 0
+            batch_size = 50  # Process in batches
+            
+            for i in range(0, len(chunks), batch_size):
+                batch = chunks[i:i + batch_size]
+                await self._index_chunk_batch(batch, file_path)
+                vectors_added += len(batch)
+            
+            # Get vector count after indexing
+            vectors_after = await self._get_pinecone_vector_count()
+            print(f"📊 Pinecone vectors after indexing: {vectors_after} (added: {vectors_after - vectors_before})")
+            
+            return {
+                "status": "success",
+                "file_path": file_path,
+                "vectors_added": vectors_added,
+                "total_chunks": len(chunks),
+                "vectors_before": vectors_before,
+                "vectors_after": vectors_after,
+                "actual_vectors_added": vectors_after - vectors_before,
+                "agent": self.name,
+                "timestamp": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            error_msg = f"Error indexing file data: {str(e)}"
+            print(f"❌ {error_msg}")
+            return {"error": error_msg}
+    
+    async def _prepare_file_chunks(self, file_path: str, data_profile: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Prepare data chunks from file for vector indexing"""
+        try:
+            import pandas as pd
+            
+            # Load the file
+            if file_path.endswith('.csv'):
+                df = pd.read_csv(file_path)
+            elif file_path.endswith('.xlsx'):
+                df = pd.read_excel(file_path)
+            else:
+                print(f"⚠️ Unsupported file type for indexing: {file_path}")
+                return []
+            
+            chunks = []
+            
+            # Create chunks from the data
+            # 1. Column descriptions
+            for col in df.columns:
+                col_info = {
+                    "content": f"Column '{col}': {df[col].dtype}, sample values: {df[col].dropna().head(3).tolist()}",
+                    "metadata": {
+                        "type": "column_info",
+                        "column_name": col,
+                        "file_path": file_path,
+                        "data_type": str(df[col].dtype)
+                    }
+                }
+                chunks.append(col_info)
+            
+            # 2. Summary statistics
+            if 'summary_statistics' in data_profile:
+                stats = data_profile['summary_statistics']
+                stats_content = f"Data summary: {len(df)} rows, {len(df.columns)} columns. "
+                if isinstance(stats, dict):
+                    stats_content += " ".join([f"{k}: {v}" for k, v in stats.items() if isinstance(v, (str, int, float))])
+                
+                chunks.append({
+                    "content": stats_content,
+                    "metadata": {
+                        "type": "data_summary", 
+                        "file_path": file_path,
+                        "rows": len(df),
+                        "columns": len(df.columns)
+                    }
+                })
+            
+            # 3. Sample data rows (first few rows as context)
+            for idx in range(min(5, len(df))):
+                row_content = f"Sample row {idx + 1}: " + ", ".join([f"{col}={df.iloc[idx][col]}" for col in df.columns[:5]])  # Limit to first 5 columns
+                chunks.append({
+                    "content": row_content,
+                    "metadata": {
+                        "type": "sample_data",
+                        "file_path": file_path,
+                        "row_index": idx
+                    }
+                })
+            
+            print(f"✅ Prepared {len(chunks)} chunks for indexing")
+            return chunks
+            
+        except Exception as e:
+            print(f"❌ Error preparing file chunks: {e}")
+            return []
+    
+    async def _index_chunk_batch(self, batch: List[Dict[str, Any]], file_path: str):
+        """Index a batch of chunks into Pinecone"""
+        try:
+            if self.pinecone_index is None:
+                print("⚠️ Pinecone index not available, skipping indexing")
+                return
+            
+            vectors_to_upsert = []            
+            for i, chunk in enumerate(batch):
+                # Generate embedding
+                embedding = await self._generate_embedding(chunk["content"])
+                
+                # Create unique ID
+                chunk_id = f"{file_path}_{chunk['metadata']['type']}_{i}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                
+                # Prepare metadata
+                metadata = chunk["metadata"].copy()
+                metadata["content"] = chunk["content"]
+                metadata["indexed_at"] = datetime.now().isoformat()
+                
+                vectors_to_upsert.append((chunk_id, embedding, metadata))
+            
+            # Upsert to Pinecone
+            self.pinecone_index.upsert(vectors_to_upsert)
+            print(f"✅ Indexed batch of {len(batch)} chunks")
+            
+        except Exception as e:
+            print(f"❌ Error indexing chunk batch: {e}")
+    
+    async def _get_pinecone_vector_count(self) -> int:
+        """Get the current number of vectors in the Pinecone index"""
+        try:
+            if self.pinecone_index is None:
+                print("⚠️ Pinecone index not available, returning 0 for vector count")
+                return 0
+            
+            # Get index stats
+            stats = self.pinecone_index.describe_index_stats()
+            total_vectors = stats.get('total_vector_count', 0)
+            
+            return total_vectors
+            
+        except Exception as e:
+            print(f"❌ Error getting Pinecone vector count: {e}")
+            return 0
+    
     def get_required_fields(self) -> List[str]:
         """Get list of required fields in state"""
-        return ["query"]
-    
-    def validate_input(self, state: Dict[str, Any]) -> bool:
-        """Validate input for retrieval operations"""
-        if not isinstance(state, dict):
-            return False
-        
-        # Check for required query
-        query = state.get("query")
-        if not query or not isinstance(query, str) or len(query.strip()) == 0:
-            return False
-        
-        return True
+        return ["query"]  # For execute method, file_path for index_file_data method

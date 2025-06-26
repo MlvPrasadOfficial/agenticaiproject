@@ -5,6 +5,7 @@ from fastapi.responses import StreamingResponse
 import json
 import asyncio
 from typing import Dict, Any, Optional
+from datetime import datetime
 
 from app.services.agent_orchestrator import AgentOrchestrator
 from app.models.query_models import QueryRequest, QueryResponse
@@ -20,7 +21,8 @@ async def process_query(request: QueryRequest):
         orchestrator = AgentOrchestrator()
         
         # Generate session ID
-        session_id = f"session_{request.timestamp}_{hash(request.query) % 10000}"
+        timestamp = request.timestamp if request.timestamp else datetime.now()
+        session_id = f"session_{int(timestamp.timestamp())}_{hash(request.query) % 10000}"
         
         # Prepare file context from file_id if provided
         file_context = None

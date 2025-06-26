@@ -13,14 +13,13 @@ class Settings(BaseSettings):
     
     # Database Settings
     DATABASE_URL: str = "sqlite:///./enterprise_insights.db"
-    
-    # AI/ML Settings
+      # AI/ML Settings
     OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OLLAMA_MODEL: str = "llama3.1"
-      # Pinecone Settings
+    OLLAMA_MODEL: str = "llama3.1"    # Pinecone Settings
     PINECONE_API_KEY: Optional[str] = None
     PINECONE_ENVIRONMENT: Optional[str] = None
-    PINECONE_INDEX_NAME: str = "pineindex"
+    PINECONE_INDEX_NAME: str = "pineindex"  # Using original index with 1024 dimensions
+    PINECONE_HOST: Optional[str] = None
     
     # LangSmith Settings
     LANGCHAIN_TRACING_V2: bool = True

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Backend Connection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test { margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .loading { background-color: #fff3cd; border-color: #ffeaa7; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Backend Connection Debug Test</h1>
+    <button onclick="runTests()">Run Tests</button>
+    <button onclick="clearResults()">Clear Results</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        
+        async function runTests() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading test">🔄 Running tests...</div>';
+            
+            const tests = [
+                { name: 'Root Endpoint', url: `${API_BASE_URL}/` },
+                { name: 'Old Health Check (should fail)', url: `${API_BASE_URL}/health` },
+                { name: 'Correct Health Check', url: `${API_BASE_URL}/api/v1/health` },
+                { name: 'API Docs', url: `${API_BASE_URL}/docs` }
+            ];
+            
+            let results = '<h2>Test Results:</h2>';
+            
+            for (const test of tests) {
+                try {
+                    console.log(`Testing: ${test.url}`);
+                    const response = await fetch(test.url, {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    const isSuccess = response.ok;
+                    const className = isSuccess ? 'success' : 'error';
+                    const icon = isSuccess ? '✅' : '❌';
+                    
+                    let responseText = '';
+                    try {
+                        const data = await response.text();
+                        responseText = data.length > 200 ? data.substring(0, 200) + '...' : data;
+                    } catch (e) {
+                        responseText = 'Could not read response';
+                    }
+                    
+                    results += `
+                        <div class="test ${className}">
+                            <strong>${icon} ${test.name}</strong><br>
+                            URL: ${test.url}<br>
+                            Status: ${response.status} ${response.statusText}<br>
+                            Response: <code>${responseText}</code>
+                        </div>
+                    `;
+                } catch (error) {
+                    results += `
+                        <div class="test error">
+                            <strong>❌ ${test.name}</strong><br>
+                            URL: ${test.url}<br>
+                            Error: ${error.message}
+                        </div>
+                    `;
+                }
+            }
+            
+            // Test the health check function specifically
+            results += '<h3>Frontend Health Check Test:</h3>';
+            try {
+                const healthResponse = await fetch(`${API_BASE_URL}/api/v1/health`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const isHealthy = healthResponse.ok;
+                const className = isHealthy ? 'success' : 'error';
+                const icon = isHealthy ? '✅' : '❌';
+                
+                results += `
+                    <div class="test ${className}">
+                        <strong>${icon} Health Check Function</strong><br>
+                        Result: ${isHealthy ? 'Backend Connected' : 'Backend Offline'}<br>
+                        This is what the frontend will see
+                    </div>
+                `;
+            } catch (error) {
+                results += `
+                    <div class="test error">
+                        <strong>❌ Health Check Function</strong><br>
+                        Error: ${error.message}
+                    </div>
+                `;
+            }
+            
+            resultsDiv.innerHTML = results;
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        // Auto-run tests on page load
+        window.onload = runTests;
+    </script>
+</body>
+</html>

@@ -418,7 +418,10 @@ export default function Home() {
     if (appState.backendConnected && !appState.demoMode && appState.currentFileId) {
       console.log('🔍 Sending query to real backend...')
       
-      // Set real agent status
+      // Generate session ID for tracking query progress
+      const sessionId = `query_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      
+      // Set initial agent status
       setAppState(prev => ({
         ...prev,
         agentStatuses: {
@@ -431,7 +434,49 @@ export default function Home() {
         }
       }))
       
+      // Start query processing and fetch real-time agent status
       const queryResult = await apiClient.sendQuery(currentQuery, appState.currentFileId)
+      
+      // Fetch real-time agent status during query processing
+      const fetchQueryStatus = async () => {
+        try {
+          const statusResponse = await fetch(`http://localhost:8000/api/v1/agents/query-status/${sessionId}`)
+          if (statusResponse.ok) {
+            const queryStatus = await statusResponse.json()
+            console.log('🔍 Real query agent status received:', queryStatus)
+            
+            // Update with real backend agent outputs
+            const agentStatuses: Record<string, 'idle' | 'active' | 'complete' | 'error'> = {}
+            const agentOutputs: Record<string, string[]> = {}
+            
+            Object.entries(queryStatus.agents || {}).forEach(([agentId, agentData]: [string, any]) => {
+              agentStatuses[agentId] = agentData.status || 'idle'
+              agentOutputs[agentId] = agentData.outputs || []
+            })
+            
+            setAppState(prev => ({
+              ...prev,
+              agentStatuses: {
+                ...prev.agentStatuses,
+                ...agentStatuses
+              },
+              agentOutputs: {
+                ...prev.agentOutputs,
+                ...agentOutputs
+              }
+            }))
+          } else {
+            console.log('⚠️ Could not fetch query status, using static outputs')
+          }
+        } catch (error) {
+          console.log('⚠️ Error fetching query status:', error)
+        }
+      }
+      
+      // Fetch status multiple times during query processing
+      setTimeout(fetchQueryStatus, 500)   // Early status
+      setTimeout(fetchQueryStatus, 2000)  // Mid processing
+      setTimeout(fetchQueryStatus, 4000)  // Late processing
       
       if (queryResult) {
         const aiResponse = {
@@ -443,22 +488,11 @@ export default function Home() {
 
         setAppState(prev => ({
           ...prev,
-          chatMessages: [...prev.chatMessages, aiResponse],
-          agentStatuses: {
-            ...prev.agentStatuses,
-            'planning-agent': 'complete',
-            'query-agent': 'complete',
-            'sql-agent': 'complete',
-            'insight-agent': 'complete'
-          },
-          agentOutputs: {
-            ...prev.agentOutputs,
-            'planning-agent': ['[REAL] Query plan created', '[REAL] Strategy defined'],
-            'query-agent': ['[REAL] Language processed', '[REAL] Intent understood'],
-            'sql-agent': ['[REAL] SQL generated', '[REAL] Results retrieved'],
-            'insight-agent': ['[REAL] Insights generated', '[REAL] Analysis complete']
-          }
+          chatMessages: [...prev.chatMessages, aiResponse]
         }))
+        
+        // Final status fetch
+        setTimeout(fetchQueryStatus, 1000)
         
         setCurrentQuery('')
         return

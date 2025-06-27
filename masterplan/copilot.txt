@@ -1,0 +1,55 @@
+# 7 RULES FOR COPILOT OPERATIONS
+
+## RULE 1: PowerShell Commands
+Always use `;` instead of `&&` in commands as they are running in PowerShell.
+
+## RULE 2: Sequential Command Execution  
+Always run one command at a time, see output of it in terminal and proceed further.
+
+## RULE 3: Single Terminal Usage
+Always run all commands in the same terminal, don't open more than 1 terminal.
+
+## RULE 4: Respect Running Services
+The frontend and backend are always running in PowerShell terminals. Check output of terminal, don't try to rerun them or kill, just wait for 5 seconds.
+
+## RULE 5: Structured Logging
+Always create logs under logs folder with timestamp and test name.
+
+## RULE 6: Terminal Output Analysis
+Read the Copilot PowerShell terminal output before running any command.
+
+## RULE 7: Changes and Learning Documentation
+Add changes/learning/findings after every end of request in changes.txt with date and timestamp, followed by the changes/findings/learning in concise format. New entries go below previous ones with timestamps for historical tracking.
+
+## DEPLOYMENT STRATEGY
+
+### Frontend Deployment
+- **Platform**: Vercel
+- **Build Command**: `npm run build`
+- **Framework**: Next.js (auto-detected)
+- **Environment Variables**: Configure in Vercel dashboard
+
+### Backend Deployment
+- **Platform**: Render
+- **Build Command**: `pip install -r requirements.txt`
+- **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- **Environment Variables**: Configure in Render dashboard
+
+### CI/CD Pipeline
+- **Platform**: GitHub Actions with GitHub Copilot integration
+- **Triggers**: Push to main branch, pull requests
+- **Automated Testing**: Run tests on every commit
+- **Deployment**: Auto-deploy on successful tests
+
+## DEVELOPMENT WORKFLOW
+
+### Local Development
+- Frontend: `npm run dev` (runs on localhost:3000)
+- Backend: `uvicorn app.main:app --reload` (runs on localhost:8000)
+- No Docker containers - native development environment
+
+### Version Control
+- GitHub repository with Copilot integration
+- Feature branches for new development
+- Pull request reviews with Copilot assistance
+- Automated code analysis and suggestions

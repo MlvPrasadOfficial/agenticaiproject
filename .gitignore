@@ -1,0 +1,139 @@
+# Enterprise Insights Copilot - Git Ignore Rules
+
+# Archive folder - ignore completely
+oldversion/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+.env
+
+# Environment Variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# IDE
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+workflow_checkpoints.db
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Vercel
+.vercel
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Uploads
+uploads/
+*.csv
+*.xlsx
+*.xls
+sample_*.csv
+test_upload.*
+
+# API Keys and Secrets
+*.key
+*.pem
+.env.*
+secrets.json
+
+# Testing
+.coverage
+.pytest_cache/
+coverage/
+.nyc_output
+htmlcov/
+
+# Monitoring
+.langsmith/
+langsmith_runs/
+
+# Backup files
+*.bak
+*.backup
+backup_*
+
+# Cache
+.cache/
+.parcel-cache
+.eslintcache
+
+# Build outputs
+build/
+dist/
+.output/
+.nuxt/
+
+# Documentation builds
+docs/_build/
+site/

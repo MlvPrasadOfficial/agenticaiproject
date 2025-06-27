@@ -1,0 +1,328 @@
+# PROJECT TOOLS & TECHNOLOGY STACK
+# Enterprise Insights Copilot - Complete Tool Inventory
+
+## LANGCHAIN & LANGGRAPH STRATEGY
+
+### LangGraph Implementation Plan
+**Purpose**: Multi-agent workflow orchestration with state management
+
+**Phase 2 Integration** (Days 4-7):
+- Single agent execution without complex workflows
+- Simple state passing between components
+- Direct agent invocation for MVP
+
+**Phase 3 Integration** (Days 8-12):
+- Full LangGraph workflow implementation
+- Multi-agent orchestration with conditional routing
+- State persistence and session management
+- Real-time workflow visualization
+
+### LangGraph Architecture
+```python
+# Workflow Structure
+START -> PlanningAgent -> ConditionalRouter -> [QueryAgent, DataAgent] -> InsightAgent -> END
+
+# State Schema
+class AgentState(TypedDict):
+    session_id: str
+    user_query: str
+    file_context: Dict[str, Any]
+    query_type: str
+    data_profile: Dict[str, Any]
+    insights: List[Dict[str, Any]]
+    errors: List[str]
+    metadata: Dict[str, Any]
+```
+
+### LangChain Components
+- **Prompts**: Structured prompts for each agent
+- **Output Parsers**: JSON schema validation
+- **Memory**: Session-based conversation memory
+- **Callbacks**: Progress tracking and logging
+- **Error Handling**: Retry logic and fallbacks
+
+## CORE DEVELOPMENT TOOLS
+
+### Backend Stack
+```
+FastAPI 0.104+           # Web framework
+Uvicorn 0.24+           # ASGI server
+Pydantic 2.5+           # Data validation
+LangChain 0.1.0+        # LLM framework
+LangGraph 0.0.40+       # Workflow orchestration
+Pandas 2.1+             # Data processing
+SQLAlchemy 2.0+         # Database ORM
+Alembic 1.12+           # Database migrations
+```
+
+### Frontend Stack
+```
+Next.js 14.0+           # React framework
+TypeScript 5.0+         # Type safety
+Tailwind CSS 3.3+      # Styling
+React Query 5.0+       # API state management
+Zod 3.22+              # Schema validation
+Lucide React 0.290+    # Icons
+Recharts 2.8+          # Data visualization
+```
+
+### AI/ML Tools
+```
+OpenAI API              # LLM provider (GPT-4)
+Pinecone               # Vector database
+Sentence Transformers  # Embeddings
+Hugging Face Hub       # Model repository
+LangSmith              # LLM observability
+```
+
+### Development Tools
+```
+Python 3.11+          # Backend runtime
+Node.js 18+           # Frontend runtime
+npm/yarn              # Package management
+Black                 # Python formatting
+Prettier              # JavaScript formatting
+ESLint                # JavaScript linting
+Pylint                # Python linting
+```
+
+### Testing Framework
+```
+pytest 7.4+           # Python testing
+pytest-asyncio       # Async testing
+httpx                 # HTTP client for tests
+Jest 29+              # JavaScript testing
+React Testing Library # Component testing
+Playwright            # E2E testing
+```
+
+### Database & Storage
+```
+SQLite                # Local development
+PostgreSQL            # Production database
+Redis                 # Caching layer
+AWS S3 / Cloudinary   # File storage
+```
+
+### Deployment & CI/CD
+```
+Render                # Backend hosting
+Vercel                # Frontend hosting
+GitHub Actions        # CI/CD pipeline
+GitHub Copilot        # AI code assistance
+Sentry                # Error tracking
+Datadog/LogRocket     # Performance monitoring
+```
+
+### Development Environment
+```
+VS Code               # Primary IDE
+GitHub Copilot        # AI pair programming
+PowerShell            # Terminal environment
+Git                   # Version control
+Postman/Thunder       # API testing
+pgAdmin               # Database management
+```
+
+## LANGGRAPH WORKFLOW DESIGN
+
+### Agent State Flow
+```mermaid
+graph TD
+    A[START] --> B[Planning Agent]
+    B --> C{Query Type?}
+    C -->|Data Analysis| D[Data Agent]
+    C -->|Question Answering| E[Query Agent]
+    C -->|Complex Analysis| F[Data Agent + Query Agent]
+    D --> G[Insight Agent]
+    E --> G
+    F --> G
+    G --> H[END]
+```
+
+### State Management Strategy
+```python
+# Persistent State
+class SessionState:
+    session_id: str
+    created_at: datetime
+    last_updated: datetime
+    current_agent: str
+    workflow_status: str
+    
+# Workflow State
+class WorkflowState:
+    user_input: str
+    file_context: Optional[Dict]
+    agent_outputs: Dict[str, Any]
+    final_result: Optional[Dict]
+    error_log: List[str]
+```
+
+### Error Handling in LangGraph
+```python
+# Retry Logic
+retry_config = {
+    "max_retries": 3,
+    "backoff_factor": 2,
+    "retry_on": [APIError, TimeoutError]
+}
+
+# Fallback Strategies
+fallback_agents = {
+    "planning": "simple_query_parser",
+    "data": "basic_statistics",
+    "query": "direct_search",
+    "insight": "template_responses"
+}
+```
+
+## MONITORING & OBSERVABILITY
+
+### LangSmith Integration
+```python
+# Tracing Configuration
+from langsmith import Client
+
+langsmith_client = Client(
+    api_key=os.getenv("LANGSMITH_API_KEY"),
+    project_name="enterprise-insights-copilot"
+)
+
+# Custom Callbacks
+class WorkflowTracker(BaseCallbackHandler):
+    def on_agent_start(self, agent_name: str, inputs: Dict):
+        # Log agent start with inputs
+        
+    def on_agent_end(self, agent_name: str, outputs: Dict):
+        # Log agent completion with outputs
+        
+    def on_agent_error(self, agent_name: str, error: Exception):
+        # Log agent errors for debugging
+```
+
+### Performance Metrics
+```python
+# Workflow Metrics
+workflow_metrics = {
+    "total_duration": float,
+    "agent_durations": Dict[str, float],
+    "token_usage": Dict[str, int],
+    "success_rate": float,
+    "error_rate": float
+}
+
+# Business Metrics
+business_metrics = {
+    "queries_processed": int,
+    "files_uploaded": int,
+    "insights_generated": int,
+    "user_satisfaction": float
+}
+```
+
+## SECURITY & COMPLIANCE
+
+### API Security
+```
+JWT Authentication     # User sessions
+API Rate Limiting     # Prevent abuse
+Input Validation      # XSS/Injection prevention
+CORS Configuration    # Cross-origin security
+HTTPS Enforcement     # Transport security
+```
+
+### Data Protection
+```
+File Upload Limits    # 50MB max
+File Type Validation  # CSV, Excel only
+Data Encryption       # At rest and transit
+PII Detection        # Automatic scanning
+Data Retention       # 30-day auto-cleanup
+```
+
+### Environment Security
+```
+Environment Variables # Secure config
+Secret Management     # API keys protection
+Dependency Scanning   # Vulnerability checks
+Code Analysis        # Security linting
+Access Controls      # Role-based permissions
+```
+
+## DEVELOPMENT WORKFLOW TOOLS
+
+### Code Quality
+```
+pre-commit           # Git hooks
+commitizen          # Conventional commits
+semantic-release    # Automated versioning
+codecov             # Coverage reporting
+sonarqube          # Code quality analysis
+```
+
+### Documentation
+```
+MkDocs             # Documentation site
+Swagger/OpenAPI    # API documentation
+Storybook          # Component documentation
+README templates   # Standardized docs
+ADR templates      # Architecture decisions
+```
+
+### Project Management
+```
+GitHub Issues      # Bug tracking
+GitHub Projects    # Sprint planning
+GitHub Milestones  # Release planning
+Linear             # Advanced project management
+Notion             # Knowledge management
+```
+
+## IMPLEMENTATION TIMELINE
+
+### Phase 1 Tools Setup (Day 1)
+- FastAPI + basic dependencies
+- Next.js + TypeScript setup
+- GitHub repository with CI/CD
+- Local development environment
+
+### Phase 2 Tools Addition (Days 4-5)
+- LangChain basic integration
+- Simple agent framework
+- Database setup (SQLite)
+- Testing framework
+
+### Phase 3 Tools Enhancement (Days 8-10)
+- LangGraph workflow engine
+- Advanced state management
+- Real-time monitoring
+- Production database
+
+### Phase 4 Tools Completion (Days 13+)
+- Vector database integration
+- Advanced analytics tools
+- Full monitoring stack
+- Security hardening
+
+## TOOL SELECTION RATIONALE
+
+### Why LangGraph?
+- **State Management**: Built-in state persistence
+- **Visual Workflows**: Clear agent interaction patterns
+- **Error Handling**: Robust retry and fallback mechanisms
+- **Scalability**: Handles complex multi-agent scenarios
+- **Debugging**: Rich tooling for workflow analysis
+
+### Why This Stack?
+- **Proven Technologies**: Battle-tested in production
+- **Developer Experience**: Great tooling and community
+- **Performance**: Fast development and runtime performance
+- **Scalability**: Can handle growth from MVP to enterprise
+- **Cost Effective**: Many tools have generous free tiers
+
+### Alternative Considerations
+- **AutoGen**: More complex setup, less state management
+- **CrewAI**: Simpler but less flexible than LangGraph
+- **Custom Orchestration**: More control but higher maintenance
+- **Celery + Redis**: Good for background tasks but less AI-focused

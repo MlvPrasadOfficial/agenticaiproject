@@ -1,0 +1,80 @@
+# PROJECT DEVELOPMENT RULES
+# Enterprise Insights Copilot - Multi-Agent AI System
+# Created: June 27, 2025
+
+## THE 7 FUNDAMENTAL RULES
+
+### RULE 1: SIMPLICITY FIRST
+- Start with the simplest working version
+- Add complexity incrementally
+- Each feature must work before adding the next
+- Avoid over-engineering from the start
+
+### RULE 2: CLEAR SEPARATION OF CONCERNS
+- Backend: Pure API logic, no frontend dependencies
+- Frontend: Pure UI logic, no backend dependencies  
+- Agents: Single responsibility, well-defined interfaces
+- Database/Storage: Isolated data layer
+
+### RULE 3: CONSISTENT ERROR HANDLING
+- Every API endpoint must have proper error handling
+- Every agent must handle failures gracefully
+- Every frontend component must handle loading/error states
+- Log errors consistently with clear context
+
+### RULE 4: INCREMENTAL TESTING
+- Test each component as it's built
+- Integration tests before moving to next feature
+- Manual testing at every milestone
+- Automated tests for critical paths
+
+### RULE 5: DOCUMENTATION AS CODE
+- Document decisions as we make them
+- Keep API contracts up to date
+- Maintain clear README files
+- Comment complex logic inline
+
+### RULE 6: VERSION CONTROL DISCIPLINE
+- Commit working states frequently
+- Tag major milestones
+- Keep feature branches focused
+- Never commit broken code
+
+### RULE 7: PERFORMANCE AWARENESS
+- Monitor response times from day one
+- Optimize database queries early
+- Handle large file uploads properly
+- Plan for concurrent users
+
+## ADDITIONAL PRINCIPLES
+
+### DEPENDENCY MANAGEMENT
+- Lock dependency versions
+- Keep dependencies minimal
+- Regular security updates
+- Clear dependency documentation
+
+### ENVIRONMENT CONSISTENCY
+- Docker for consistent environments
+- Environment variables for configuration
+- Clear setup instructions
+- Local development mirrors production
+
+### USER EXPERIENCE FOCUS
+- Fast load times
+- Clear error messages
+- Intuitive navigation
+- Mobile-responsive design
+
+### SECURITY BY DESIGN
+- Input validation everywhere
+- Secure file uploads
+- API authentication
+- Data encryption at rest
+
+## SUCCESS METRICS
+- Backend health check: < 100ms response
+- File upload: < 5 seconds for 10MB
+- Query processing: < 30 seconds end-to-end
+- Frontend load: < 2 seconds first paint
+- Zero crashes in normal operation

@@ -4,7 +4,7 @@
 Always use `;` instead of `&&` in commands as they are running in PowerShell.
 
 ## RULE 2: Sequential Command Execution  
-Always run one command at a time, see output of it in terminal and proceed further.
+Always run one command at a time, see output of it in  a powershell terminal and proceed further.
 
 ## RULE 3: Single Terminal Usage
 Always run all commands in the same terminal, don't open more than 1 terminal.
@@ -20,6 +20,55 @@ Read the Copilot PowerShell terminal output before running any command.
 
 ## RULE 7: Changes and Learning Documentation
 Add changes/learning/findings after every end of request in changes.txt with date and timestamp, followed by the changes/findings/learning in concise format. New entries go below previous ones with timestamps for historical tracking.
+
+## RULE 8: Detailed Task Specification (Enhanced Understanding)
+When implementing tasks from the task table, break down complex tasks into specific, actionable sub-components with clear acceptance criteria. Include technical specifications (libraries, file paths, API endpoints) in task descriptions for clarity and efficiency.
+
+## RULE 9: Component-First Development (Enhanced Understanding)
+Always create reusable, well-typed components before integrating them into larger systems. Follow React/Next.js best practices with proper TypeScript interfaces, error boundaries, and responsive design patterns.
+
+## RULE 10: API-First Backend Design (Enhanced Understanding)
+Design backend endpoints with OpenAPI/FastAPI documentation first, implement proper Pydantic models for request/response validation, and ensure comprehensive error handling with appropriate HTTP status codes.
+
+## RULE 11: State Management Clarity (Enhanced Understanding)
+Use React Query for server state, local state for UI state, and maintain clear separation of concerns. Always implement loading, error, and success states for better user experience.
+
+## RULE 12: Security-First Approach (Enhanced Understanding)
+Implement input validation, sanitization, and proper authentication/authorization from the beginning. Never store sensitive data in frontend state or logs. Always use HTTPS and secure headers.
+
+## RULE 13: Performance Optimization Strategy (Enhanced Understanding)
+Implement lazy loading, virtual scrolling for large datasets, code splitting, and proper caching strategies. Monitor bundle sizes and optimize images and assets for production deployment.
+
+## RULE 14: Documentation-Driven Development (Enhanced Understanding)
+Maintain comprehensive documentation alongside code development. Create markdown files for architecture, workflows, and user guides. Link documentation hierarchically for easy navigation.
+
+## RULE 15: Error-First Debugging Strategy (Enhanced Understanding)
+Always implement comprehensive error handling before adding new features. Log errors with context, provide meaningful error messages to users, and create error recovery mechanisms. Use structured logging for debugging.
+
+## RULE 16: Progressive Feature Implementation (Enhanced Understanding)
+Implement features incrementally with working prototypes at each stage. Start with minimal viable implementation, test thoroughly, then enhance. Always ensure the application remains in a working state.
+
+## RULE 17: Data-Driven Decision Making (Enhanced Understanding)
+Implement analytics and monitoring from the beginning. Track user behavior, performance metrics, and business KPIs. Use data to guide feature development and optimization decisions.
+
+## RULE 18: Accessibility-First Development (Enhanced Understanding)
+Build with accessibility in mind from the start. Follow WCAG 2.1 AA guidelines, implement proper ARIA labels, ensure keyboard navigation, and test with screen readers. Accessibility is not optional.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## DEPLOYMENT STRATEGY
 

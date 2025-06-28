@@ -5,7 +5,8 @@ MAANG-level configuration management with Pydantic
 
 from functools import lru_cache
 from typing import List, Optional
-from pydantic import BaseSettings, validator
+from pydantic_settings import BaseSettings
+from pydantic import field_validator, ValidationInfo
 from enum import Enum
 import os
 
@@ -71,6 +72,10 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE: int = 100 * 1024 * 1024  # 100MB
     ALLOWED_FILE_TYPES: List[str] = [".csv", ".xlsx", ".xls", ".json", ".txt"]
     UPLOAD_DIRECTORY: str = "uploads"
+    UPLOAD_DIR: str = "uploads"  # For compatibility
+    MAX_FILES_PER_UPLOAD: int = 5
+    ENABLE_VIRUS_SCANNING: bool = False  # Set to True in production with ClamAV
+    ENABLE_FILE_COMPRESSION: bool = True
     
     # AI/LLM Configuration
     OPENAI_API_KEY: Optional[str] = None
@@ -107,31 +112,35 @@ class Settings(BaseSettings):
     ENABLE_AI_AGENTS: bool = True
     ENABLE_RAG: bool = True
     
-    @validator("ENVIRONMENT", pre=True)
+    @field_validator("ENVIRONMENT", mode="before")
+    @classmethod
     def validate_environment(cls, v):
         """Validate environment setting"""
         if isinstance(v, str):
             return Environment(v.lower())
         return v
     
-    @validator("DEBUG", pre=True)
-    def validate_debug(cls, v, values):
+    @field_validator("DEBUG", mode="before")
+    @classmethod  
+    def validate_debug(cls, v, info):
         """Auto-set debug based on environment"""
-        if "ENVIRONMENT" in values:
-            return values["ENVIRONMENT"] == Environment.DEVELOPMENT
+        if hasattr(info, 'data') and "ENVIRONMENT" in info.data:
+            return info.data["ENVIRONMENT"] == Environment.DEVELOPMENT
         return v
     
-    @validator("ALLOWED_HOSTS", pre=True)
+    @field_validator("ALLOWED_HOSTS", mode="before")
+    @classmethod
     def validate_allowed_hosts(cls, v):
         """Parse allowed hosts from environment"""
         if isinstance(v, str):
             return [host.strip() for host in v.split(",")]
         return v
     
-    @validator("SECRET_KEY")
-    def validate_secret_key(cls, v, values):
+    @field_validator("SECRET_KEY")
+    @classmethod
+    def validate_secret_key(cls, v, info):
         """Ensure secret key is set in production"""
-        if values.get("ENVIRONMENT") == Environment.PRODUCTION:
+        if hasattr(info, 'data') and info.data.get("ENVIRONMENT") == Environment.PRODUCTION:
             if v == "your-super-secret-key-change-in-production":
                 raise ValueError("SECRET_KEY must be set in production")
         return v

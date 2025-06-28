@@ -561,6 +561,52 @@ const InteractiveChart = ({ chartData, type, title }) => {
 }
 ```
 
+## 🎨 UPDATED VISUAL DESIGN STRATEGY (Glassmorphism + 3D + Dark)
+
+### Enhanced Visual Identity:
+Building on the original personas and user journeys, we're implementing:
+
+#### **Core Visual Philosophy:**
+- **Glassmorphism Foundation**: Semi-transparent panels with blur effects
+- **3D Agent Representations**: Each AI agent has unique 3D avatar and animations
+- **Dark Professional Theme**: Black/charcoal base with cyan/purple/green accents
+- **RAG Pipeline Visualization**: Visual representation of document processing and retrieval
+- **Enterprise Aesthetics**: Clean, data-focused, professional interface
+
+#### **Agent-Centric Design:**
+```
+Planning Agent (Purple): 3D geometric brain icon with rotation animation
+Data Agent (Cyan): Particle cloud with data flow visualization  
+Query Agent (Green): Pulsing orb with query expansion effects
+Insight Agent (Amber): Crystalline structure with completion glow
+```
+
+#### **RAG Visualization Components:**
+- **Document Ingestion**: 3D floating documents with processing pipeline
+- **Vector Embeddings**: Particle systems representing semantic similarity
+- **Retrieval Process**: Animated connections between query and relevant content
+- **Context Assembly**: Visual composition of retrieved information
+
+#### **Glassmorphism Interface Elements:**
+- **Chat Bubbles**: Semi-transparent with backdrop blur and accent borders
+- **Data Tables**: 3D perspective with glass panels and hover effects
+- **Status Cards**: Floating glass panels with real-time metrics
+- **Navigation**: Glass top bar with 3D navigation elements
+
+#### **Color-Coded Workflow States:**
+- **Idle**: Subtle glow with breathing animation
+- **Processing**: Active particle effects and progress indicators
+- **Completed**: Success glow with completion animations
+- **Error**: Red accent with alert pulsing
+
+#### **Mobile-First Responsive:**
+- **Collapsible 3D Sidebar**: Swipe gestures for agent panel access
+- **Touch-Optimized**: Larger targets with haptic feedback simulation
+- **Progressive Enhancement**: Full 3D on desktop, simplified on mobile
+- **Performance Optimized**: Hardware-accelerated CSS transforms
+
+This enhanced visual strategy transforms the original wireframes into a cutting-edge, AI-native interface that makes complex data operations visually intuitive while maintaining enterprise-grade professionalism.
+
 ## RESPONSIVE DESIGN STRATEGY
 
 ### Breakpoint System

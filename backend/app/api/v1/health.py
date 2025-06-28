@@ -235,7 +235,7 @@ def check_file_system() -> Dict[str, Any]:
         }
 
 
-@router.get("/health", response_model=HealthStatus)
+@router.get("/health/", response_model=HealthStatus)
 async def health_check():
     """
     Comprehensive health check endpoint

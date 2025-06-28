@@ -179,6 +179,9 @@ def setup_logging():
     logging.getLogger("uvicorn.error").setLevel(logging.INFO)
     logging.getLogger("fastapi").setLevel(logging.INFO)
     
+    # Suppress noisy file watching logs in development
+    logging.getLogger("watchfiles.main").setLevel(logging.WARNING)
+    
     # Suppress noisy third-party loggers in production
     if settings.is_production:
         logging.getLogger("urllib3").setLevel(logging.WARNING)

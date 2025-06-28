@@ -4,7 +4,7 @@ MAANG-level API routing and organization
 """
 
 from fastapi import APIRouter
-from app.api.v1 import health
+from app.api.v1 import health, upload, data
 
 # Create main API router
 api_router = APIRouter()
@@ -12,11 +12,21 @@ api_router = APIRouter()
 # Include health check routes
 api_router.include_router(
     health.router,
-    prefix="/health",
     tags=["health"],
     responses={
         200: {"description": "Healthy"},
         503: {"description": "Service Unavailable"}
+    }
+)
+
+# Include file upload routes
+api_router.include_router(
+    upload.router,
+    tags=["File Management"],
+    responses={
+        413: {"description": "File too large"},
+        415: {"description": "Unsupported file type"},
+        422: {"description": "Validation error"}
     }
 )
 

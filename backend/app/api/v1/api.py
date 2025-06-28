@@ -4,7 +4,7 @@ MAANG-level API routing and organization
 """
 
 from fastapi import APIRouter
-from app.api.v1 import health, upload, data
+from app.api.v1 import health, upload, data, agents
 
 # Create main API router
 api_router = APIRouter()
@@ -27,6 +27,27 @@ api_router.include_router(
         413: {"description": "File too large"},
         415: {"description": "Unsupported file type"},
         422: {"description": "Validation error"}
+    }
+)
+
+# Include data processing routes
+api_router.include_router(
+    data.router,
+    tags=["Data Processing"],
+    responses={
+        404: {"description": "Data not found"},
+        422: {"description": "Validation error"}
+    }
+)
+
+# Include agent system routes
+api_router.include_router(
+    agents.router,
+    tags=["Agent System"],
+    responses={
+        404: {"description": "Resource not found"},
+        422: {"description": "Validation error"},
+        500: {"description": "Internal server error"}
     }
 )
 

@@ -1,0 +1,88 @@
+# Dependabot configuration for automated dependency updates
+version: 2
+updates:
+  # Frontend dependencies (npm)
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "enterprise-insights-team"
+    commit-message:
+      prefix: "feat"
+      prefix-development: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "frontend"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    ignore:
+      # Ignore major version updates for core frameworks
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+
+  # Backend dependencies (pip)
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "enterprise-insights-team"
+    commit-message:
+      prefix: "feat"
+      prefix-development: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "backend"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    ignore:
+      # Ignore major version updates for core frameworks
+      - dependency-name: "fastapi"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "enterprise-insights-team"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
+
+  # Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "enterprise-insights-team"
+    commit-message:
+      prefix: "feat"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "docker"

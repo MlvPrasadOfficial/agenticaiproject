@@ -1,0 +1,105 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run security scans daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  security-scan:
+    name: Security Vulnerability Scanning
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        component: [frontend, backend]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js (for frontend)
+      if: matrix.component == 'frontend'
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Setup Python (for backend)
+      if: matrix.component == 'backend'
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        cache-dependency-path: backend/requirements.txt
+    
+    - name: Install frontend dependencies
+      if: matrix.component == 'frontend'
+      run: |
+        cd frontend
+        npm ci
+    
+    - name: Install backend dependencies
+      if: matrix.component == 'backend'
+      run: |
+        cd backend
+        pip install -r requirements.txt
+    
+    - name: Run npm audit (frontend)
+      if: matrix.component == 'frontend'
+      run: |
+        cd frontend
+        npm audit --audit-level=moderate
+        npm audit --audit-level=moderate --json > audit-results.json || true
+    
+    - name: Run pip safety check (backend)
+      if: matrix.component == 'backend'
+      run: |
+        cd backend
+        pip install safety
+        safety check --json > safety-results.json || true
+    
+    - name: Run Snyk security scan
+      uses: snyk/actions/node@master
+      if: matrix.component == 'frontend'
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=medium --file=frontend/package.json
+    
+    - name: Run Snyk Python scan
+      uses: snyk/actions/python@master
+      if: matrix.component == 'backend'
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=medium --file=backend/requirements.txt
+    
+    - name: Upload security results
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-scan-results-${{ matrix.component }}
+        path: |
+          frontend/audit-results.json
+          backend/safety-results.json
+        retention-days: 30
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Dependency Review
+      uses: actions/dependency-review-action@v3
+      with:
+        fail-on-severity: moderate
+        fail-on-scopes: runtime

@@ -1,0 +1,28 @@
+{
+  "name": "enterprise-insights-backend",
+  "version": "1.0.0",
+  "description": "Backend for Enterprise Insights Copilot",
+  "scripts": {
+    "test": "python -m pytest tests/ -v",
+    "test:watch": "python -m pytest tests/ -v --tb=short -f",
+    "test:coverage": "python -m pytest tests/ --cov=app --cov-report=html --cov-report=term",
+    "lint": "python -m pylint app/ tests/",
+    "lint:fix": "python -m black app/ tests/ && python -m isort app/ tests/",
+    "format": "python -m black app/ tests/",
+    "format:check": "python -m black --check app/ tests/",
+    "type-check": "python -m mypy app/",
+    "security": "python -m bandit -r app/",
+    "quality": "npm run lint && npm run format:check && npm run type-check && npm run security",
+    "pre-commit": "npm run quality && npm run test"
+  },
+  "devDependencies": {
+    "pytest": "^7.4.0",
+    "pytest-cov": "^4.1.0",
+    "pytest-asyncio": "^0.21.0",
+    "black": "^23.3.0",
+    "isort": "^5.12.0",
+    "pylint": "^2.17.0",
+    "mypy": "^1.4.0",
+    "bandit": "^1.7.5"
+  }
+}

@@ -1,0 +1,21 @@
+# Render Configuration File
+# This file configures the Render deployment settings
+
+services:
+  - type: web
+    name: enterprise-insights-backend
+    env: python
+    buildCommand: "chmod +x build.sh && ./build.sh"
+    startCommand: "uvicorn main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: false
+      - key: ALLOWED_ORIGINS
+        value: "https://enterprise-insights-frontend.vercel.app"
+    healthCheckPath: /health
+    autoDeploy: true
+    plan: starter # Can be upgraded to standard or pro as needed

@@ -1,0 +1,24 @@
+# Files to ignore for Prettier formatting
+node_modules/
+dist/
+build/
+coverage/
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+*.log
+*.lock
+.env*
+.DS_Store
+*.tsbuildinfo
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.venv/
+venv/

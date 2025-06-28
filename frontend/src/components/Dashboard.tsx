@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useRef } from "react";
-import { Upload, Send, File, X, AlertCircle, CheckCircle } from "lucide-react";
+import { Upload, Send, File, X, AlertCircle, CheckCircle, BarChart3 } from "lucide-react";
 import AgentList from "./AgentList";
 import DataPreview from "./DataPreview";
 import { HealthIndicator } from "./ui/health-indicator";
 import { useFileUpload, useDataPreview, useBackendConnection, useChat } from "../hooks/useData";
+import Link from "next/link";
 
 interface UploadedFile {
   name: string;
@@ -215,13 +216,29 @@ export default function Dashboard() {
 
               {/* View Data Button */}
               {uploadedFile.preview_available && (
-                <button
-                  onClick={() => setShowDataPreview(true)}
-                  className="w-full bg-gradient-to-r from-accent-secondary to-accent-tertiary text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-glass-lg hover:transform hover:scale-[1.02] flex items-center justify-center gap-2"
-                >
-                  <File className="w-4 h-4" />
-                  View Data Preview
-                </button>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setShowDataPreview(true)}
+                    className="w-full bg-gradient-to-r from-accent-secondary to-accent-tertiary text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-glass-lg hover:transform hover:scale-[1.02] flex items-center justify-center gap-2"
+                  >
+                    <File className="w-4 h-4" />
+                    View Data Preview
+                  </button>
+
+                  <Link href="/visualization" className="block">
+                    <button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-glass-lg hover:transform hover:scale-[1.02] flex items-center justify-center gap-2">
+                      <BarChart3 className="w-4 h-4" />
+                      Data Visualization Dashboard
+                    </button>
+                  </Link>
+
+                  <Link href="/conversation" className="block">
+                    <button className="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-glass-lg hover:transform hover:scale-[1.02] flex items-center justify-center gap-2">
+                      <Send className="w-4 h-4" />
+                      AI Conversation Interface
+                    </button>
+                  </Link>
+                </div>
               )}
 
               {/* Validation Errors */}

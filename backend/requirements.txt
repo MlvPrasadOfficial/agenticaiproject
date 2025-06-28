@@ -45,7 +45,7 @@ pypdf==3.17.4
 
 # File Upload and Processing
 python-multipart==0.0.6
-aiofiles==23.2.1
+aiofiles==24.1.0
 pandas==2.1.4
 openpyxl==3.1.2
 xlrd==2.0.1
@@ -54,7 +54,7 @@ numpy==1.24.3
 
 # Async and Concurrency
 asyncio==3.4.3
-aiofiles==23.2.1
+aiofiles==24.1.0
 httpx==0.25.2
 
 # Monitoring and Observability
@@ -103,7 +103,7 @@ structlog==23.2.0
 colorama==0.4.6
 
 # File I/O for log aggregation
-aiofiles==23.2.1
+aiofiles==24.1.0
 
 # Testing and Quality Assurance
 pytest==7.4.3

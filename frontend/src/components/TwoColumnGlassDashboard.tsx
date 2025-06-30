@@ -239,20 +239,20 @@ export default function TwoColumnGlassDashboard({ className = '' }: Readonly<Mod
               </div>
 
               {/* Single Large Upload Card */}
-              <div className="upload-cta glass-card p-8">
-                <div className="text-center mb-6">
+              <div className="upload-cta glass-card p-6">
+                <div className="text-center mb-4">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4 floating-icon">
                     <Upload className="w-8 h-8 text-white" />
                   </div>
                   <h4 className="text-xl font-bold text-white mb-2">Upload Your Data</h4>
-                  <p className="text-slate-300">Drop files here or click to browse</p>
+                  <p className="text-slate-300">Drag & drop files or click to browse</p>
                   <p className="text-sm text-slate-400 mt-1">CSV, Excel, JSON supported • Max 10MB per file</p>
                 </div>
 
                 <FileUploadQueue
                   onUploadComplete={handleUploadComplete}
                   onUploadError={handleUploadError}
-                  className="mb-6"
+                  className="mb-4"
                 />
 
                 {/* Upload Progress Indicator */}

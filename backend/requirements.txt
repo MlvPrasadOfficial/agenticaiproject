@@ -84,7 +84,7 @@ pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-cov==4.1.0
 black==23.11.0
-isort==5.12.0
+isort==6.0.1
 flake8==6.1.0
 mypy==1.7.1
 
@@ -118,7 +118,7 @@ pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-cov==4.1.0
 black==23.11.0
-isort==5.12.0
+isort==6.0.1
 pylint==3.0.2
 mypy==1.7.1
 bandit==1.7.5

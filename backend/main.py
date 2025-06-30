@@ -6,6 +6,7 @@ MAANG-level backend with multi-agent AI capabilities
 from fastapi import FastAPI
 from app.core.config import settings
 from app.core.logging import setup_logging
+from app.core.security import setup_security_middleware
 from app.api.v1.api import api_router
 from app.middleware.cors import setup_cors
 from app.middleware.request_id import setup_request_middleware
@@ -27,6 +28,7 @@ app = FastAPI(
 # Set up middleware (order matters!)
 setup_error_handling(app)      # Must be first to catch all errors
 setup_request_middleware(app)  # Request tracking and correlation
+setup_security_middleware(app) # Security headers, rate limiting, CORS
 setup_cors(app)               # CORS handling
 
 # Include API router

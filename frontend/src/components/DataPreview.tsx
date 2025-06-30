@@ -1,27 +1,59 @@
 'use client';
 
 import { FileText, TrendingUp, AlertTriangle, CheckCircle, BarChart3, Database } from 'lucide-react';
-import { DataPreviewResponse, DataStatisticsResponse } from '../services/api';
+import { useDataPreview } from '../hooks/useData';
+import { useNotifications } from './ui/notification';
+import { useEffect } from 'react';
 
 interface DataPreviewProps {
-  preview: DataPreviewResponse;
-  statistics: DataStatisticsResponse;
-  isLoading?: boolean;
+  readonly fileId: string | null;
+  readonly rows?: number;
 }
 
-export default function DataPreview({ preview, statistics, isLoading = false }: DataPreviewProps) {
+export default function DataPreview({ fileId, rows = 10 }: DataPreviewProps) {
+  const { isLoading, error, preview, statistics } = useDataPreview(fileId);
+  const { addNotification } = useNotifications();
+
+  useEffect(() => {
+    if (error) {
+      addNotification({
+        type: 'error',
+        title: 'Data Preview Error',
+        message: error,
+      });
+    }
+  }, [error, addNotification]);
+
   if (isLoading) {
     return (
-      <div className="card-glass p-6 animate-pulse">
+      <div className="card-glass p-6 animate-pulse" aria-busy="true" aria-live="polite">
         <div className="h-6 bg-glass-hover rounded mb-4"></div>
         <div className="space-y-3">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-4 bg-glass-hover rounded"></div>
+            <div key={`skeleton-row-${Math.random().toString(36).slice(2)}`} className="h-4 bg-glass-hover rounded"></div>
           ))}
         </div>
       </div>
     );
   }
+
+  if (error) {
+    return (
+      <div className="card-glass p-6" role="alert" aria-live="assertive">
+        <div className="flex items-center gap-2 text-accent-error">
+          <span className="font-bold">Error:</span>
+          <span>{error}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!preview || !statistics) {
+    return null;
+  }
+
+  // Helper to get a unique key for columns
+  const getColumnKey = (col: { name: string; type: string }) => `${col.name}-${col.type}`;
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat().format(num);
@@ -101,7 +133,7 @@ export default function DataPreview({ preview, statistics, isLoading = false }: 
           </h3>
           <div className="space-y-2">
             {statistics.data_quality.issues.slice(0, 5).map((issue, index) => (
-              <div key={index} className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+              <div key={issue} className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                 <AlertTriangle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
                 <span className="text-sm text-text-secondary">{issue}</span>
               </div>
@@ -119,7 +151,7 @@ export default function DataPreview({ preview, statistics, isLoading = false }: 
           </h3>
           <div className="space-y-2">
             {statistics.recommendations.slice(0, 3).map((recommendation, index) => (
-              <div key={index} className="flex items-start gap-2 p-3 bg-accent-tertiary/10 border border-accent-tertiary/20 rounded-lg">
+              <div key={recommendation} className="flex items-start gap-2 p-3 bg-accent-tertiary/10 border border-accent-tertiary/20 rounded-lg">
                 <CheckCircle className="w-4 h-4 text-accent-tertiary mt-0.5 flex-shrink-0" />
                 <span className="text-sm text-text-secondary">{recommendation}</span>
               </div>
@@ -139,8 +171,8 @@ export default function DataPreview({ preview, statistics, isLoading = false }: 
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-glass-border">
-                {preview.columns.map((column, index) => (
-                  <th key={index} className="text-left p-3 text-text-primary font-medium">
+                {preview.columns.map((column) => (
+                  <th key={getColumnKey(column)} className="text-left p-3 text-text-primary font-medium">
                     <div className="flex flex-col gap-1">
                       <span>{column.name}</span>
                       <span className="text-xs text-text-muted font-normal">
@@ -158,9 +190,9 @@ export default function DataPreview({ preview, statistics, isLoading = false }: 
             </thead>
             <tbody>
               {preview.data.map((row, rowIndex) => (
-                <tr key={rowIndex} className="border-b border-glass-border/50 hover:bg-glass-hover/50">
-                  {preview.columns.map((column, colIndex) => (
-                    <td key={colIndex} className="p-3 text-text-secondary">
+                <tr key={row.__rowid ?? Object.values(row).join('-') ?? rowIndex} className="border-b border-glass-border/50 hover:bg-glass-hover/50">
+                  {preview.columns.map((column) => (
+                    <td key={getColumnKey(column)} className="p-3 text-text-secondary">
                       <div className="max-w-[200px] truncate">
                         {row[column.name] !== null && row[column.name] !== undefined 
                           ? String(row[column.name]) 
@@ -192,8 +224,8 @@ export default function DataPreview({ preview, statistics, isLoading = false }: 
         </h3>
         
         <div className="grid gap-4">
-          {statistics.column_statistics.slice(0, 10).map((column, index) => (
-            <div key={index} className="bg-glass-bg p-4 rounded-lg border border-glass-border">
+          {statistics.column_statistics.slice(0, 10).map((column) => (
+            <div key={column.name} className="bg-glass-bg p-4 rounded-lg border border-glass-border">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-medium text-text-primary">{column.name}</h4>
                 <div className={`flex items-center gap-1 ${getQualityColor(column.quality_score)}`}>

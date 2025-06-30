@@ -5,6 +5,7 @@ MAANG-level API routing and organization
 
 from fastapi import APIRouter
 from app.api.v1 import health, upload, data, agents, rag
+from app.api.v1.endpoints import terminal
 
 # Create main API router
 api_router = APIRouter()
@@ -58,6 +59,17 @@ api_router.include_router(
     responses={
         200: {"description": "Success"},
         500: {"description": "Internal server error"}
+    }
+)
+
+# Include terminal monitoring routes
+api_router.include_router(
+    terminal.router,
+    tags=["Terminal Monitoring"],
+    responses={
+        200: {"description": "Success"},
+        500: {"description": "Internal server error"},
+        503: {"description": "Service unavailable"}
     }
 )
 

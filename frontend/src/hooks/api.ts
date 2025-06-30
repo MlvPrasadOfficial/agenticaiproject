@@ -15,6 +15,77 @@ import {
   QueryResponseSchema,
 } from '@/lib/schemas'
 
+// Additional schemas for agent operations
+export interface AgentExecutionRequest {
+  agent_type: string;
+  query: string;
+  session_id?: string;
+  data_source?: string;
+  parameters?: Record<string, any>;
+}
+
+export interface AgentExecutionResponse {
+  execution_id: string;
+  agent_type: string;
+  status: string;
+  session_id: string;
+  timestamp: string;
+  estimated_duration: number;
+}
+
+export interface ConversationMessage {
+  id: string;
+  session_id: string;
+  message: string;
+  response: string;
+  timestamp: string;
+  agent_type?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface ConversationRequest {
+  session_id: string;
+  message: string;
+  context?: Record<string, any>;
+}
+
+export interface SessionRequest {
+  user_id?: string;
+  session_name?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface Session {
+  session_id: string;
+  user_id?: string;
+  session_name?: string;
+  created_at: string;
+  updated_at: string;
+  metadata?: Record<string, any>;
+}
+
+// Additional interfaces for real-time status tracking
+export interface ExecutionStatus {
+  execution_id: string;
+  agent_type: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  progress: number;
+  message: string;
+  timestamp: string;
+  result?: Record<string, any>;
+  error?: string;
+}
+
+export interface StatusUpdate {
+  id: string;
+  type: 'agent_execution' | 'workflow';
+  status: string;
+  progress?: number;
+  message?: string;
+  timestamp: string;
+  metadata?: Record<string, any>;
+}
+
 // Query keys for consistent caching
 export const queryKeys = {
   health: ['health'] as const,
@@ -25,6 +96,15 @@ export const queryKeys = {
   workflow: (id: string) => ['workflows', id] as const,
   queries: ['queries'] as const,
   query: (id: string) => ['queries', id] as const,
+  // New agent-related keys
+  sessions: ['sessions'] as const,
+  session: (id: string) => ['sessions', id] as const,
+  conversation: (sessionId: string) => ['conversations', sessionId] as const,
+  agentExecution: (id: string) => ['agent-execution', id] as const,
+  // Keys for real-time status polling
+  executionStatus: (id: string) => ['execution-status', id] as const,
+  workflowStatus: (id: string) => ['workflow-status', id] as const,
+  statusUpdate: (id: string) => ['status-update', id] as const,
 }
 
 // Health check hook
@@ -194,4 +274,206 @@ export function useErrorHandler() {
       console.error('Server error occurred')
     }
   }
+}
+
+// Agent execution hooks
+export function useExecuteAgent() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (request: AgentExecutionRequest): Promise<AgentExecutionResponse> => {
+      const response = await api.post('/api/v1/agents/execute', request)
+      return response.data
+    },
+    onSuccess: (data) => {
+      // Cache the execution
+      queryClient.setQueryData(queryKeys.agentExecution(data.execution_id), data)
+    },
+  })
+}
+
+export function useAgentExecutionStatus(executionId: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: queryKeys.agentExecution(executionId),
+    queryFn: async () => {
+      const response = await api.get(`/api/v1/agents/execution/${executionId}`)
+      return response.data
+    },
+    enabled: enabled && !!executionId,
+    refetchInterval: 2000, // Poll every 2 seconds for status updates
+  })
+}
+
+// Session management hooks
+export function useCreateSession() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (request: SessionRequest): Promise<Session> => {
+      const response = await api.post('/api/v1/agents/session', request)
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions })
+    },
+  })
+}
+
+export function useSession(sessionId: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: queryKeys.session(sessionId),
+    queryFn: async (): Promise<Session> => {
+      const response = await api.get(`/api/v1/agents/session/${sessionId}`)
+      return response.data
+    },
+    enabled: enabled && !!sessionId,
+  })
+}
+
+export function useSessions() {
+  return useQuery({
+    queryKey: queryKeys.sessions,
+    queryFn: async (): Promise<Session[]> => {
+      const response = await api.get('/api/v1/agents/sessions')
+      return response.data
+    },
+  })
+}
+
+// Conversation hooks
+export function useSendMessage() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (request: ConversationRequest): Promise<ConversationMessage> => {
+      const response = await api.post('/api/v1/agents/conversation', request)
+      return response.data
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate conversation history for this session
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.conversation(variables.session_id) 
+      })
+    },
+  })
+}
+
+export function useConversationHistory(sessionId: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: queryKeys.conversation(sessionId),
+    queryFn: async (): Promise<ConversationMessage[]> => {
+      const response = await api.get(`/api/v1/agents/conversation/${sessionId}/history`)
+      return response.data
+    },
+    enabled: enabled && !!sessionId,
+    refetchInterval: 3000, // Poll every 3 seconds for new messages
+  })
+}
+
+// Real-time status tracking hooks
+export function useExecutionStatus(executionId: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: queryKeys.executionStatus(executionId),
+    queryFn: async (): Promise<ExecutionStatus> => {
+      const response = await api.get(`/api/v1/agents/execution/${executionId}`)
+      return response.data
+    },
+    enabled: enabled && !!executionId,
+    refetchInterval: (query) => {
+      // Stop polling if execution is completed or failed
+      if (query.state.data?.status === 'completed' || query.state.data?.status === 'failed') {
+        return false
+      }
+      // Poll every 1 second for active executions
+      return 1000
+    },
+    staleTime: 0, // Always refetch to get latest status
+  })
+}
+
+export function useWorkflowStatus(workflowId: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: queryKeys.workflowStatus(workflowId),
+    queryFn: async (): Promise<WorkflowStatus> => {
+      const response = await api.get(`/api/v1/agents/workflow/${workflowId}`)
+      return response.data
+    },
+    enabled: enabled && !!workflowId,
+    refetchInterval: (query) => {
+      // Stop polling if workflow is completed or failed
+      if (query.state.data?.status === 'completed' || query.state.data?.status === 'failed') {
+        return false
+      }
+      // Poll every 1 second for active workflows
+      return 1000
+    },
+    staleTime: 0, // Always refetch to get latest status
+  })
+}
+
+export function useStatusUpdate(sessionId: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: queryKeys.statusUpdate(sessionId),
+    queryFn: async (): Promise<StatusUpdate[]> => {
+      const response = await api.get(`/api/v1/agents/status/${sessionId}`)
+      return response.data
+    },
+    enabled: enabled && !!sessionId,
+    refetchInterval: 2000, // Poll every 2 seconds for status updates
+    staleTime: 0, // Always refetch to get latest updates
+  })
+}
+
+// Enhanced agent execution hook with real-time status tracking
+export function useAgentExecutionWithStatus() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (request: AgentExecutionRequest): Promise<AgentExecutionResponse> => {
+      const response = await api.post('/api/v1/agents/execute', request)
+      return response.data
+    },
+    onSuccess: (data) => {
+      // Invalidate and immediately start polling for execution status
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.executionStatus(data.execution_id) 
+      })
+      
+      // Start polling for the execution status
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.executionStatus(data.execution_id),
+        queryFn: async () => {
+          const response = await api.get(`/api/v1/agents/execution/${data.execution_id}`)
+          return response.data
+        },
+      })
+    },
+  })
+}
+
+// Enhanced workflow execution hook with real-time status tracking
+export function useWorkflowExecutionWithStatus() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (request: any): Promise<any> => {
+      const response = await api.post('/api/v1/agents/workflow/execute', request)
+      return response.data
+    },
+    onSuccess: (data) => {
+      // Invalidate and immediately start polling for workflow status
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.workflowStatus(data.workflow_id) 
+      })
+      
+      // Start polling for the workflow status
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.workflowStatus(data.workflow_id),
+        queryFn: async () => {
+          const response = await api.get(`/api/v1/agents/workflow/${data.workflow_id}`)
+          return response.data
+        },
+      })
+    },
+  })
 }

@@ -4,7 +4,7 @@ Implements Tasks 50-54: Agent execution, workflows, sessions, conversations, rea
 """
 
 from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from datetime import datetime
@@ -12,6 +12,7 @@ import uuid
 import json
 import asyncio
 import logging
+from dataclasses import asdict
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
@@ -453,3 +454,19 @@ async def agent_health_check():
             "error": str(e),
             "timestamp": datetime.now().isoformat()
         }
+
+
+@router.websocket("/ws/status/{session_id}")
+async def websocket_status_endpoint(websocket: WebSocket, session_id: str):
+    """
+    Task 54: Provide real-time status updates via WebSocket.
+    """
+    await websocket.accept()
+    try:
+        async for update in agent_manager.subscribe_to_updates(session_id):
+            await websocket.send_json(asdict(update))
+    except WebSocketDisconnect:
+        logger.info(f"WebSocket disconnected for session: {session_id}")
+    except Exception as e:
+        logger.error(f"WebSocket error for session {session_id}: {e}")
+        await websocket.close(code=1011)

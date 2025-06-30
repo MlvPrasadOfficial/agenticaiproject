@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import {
   MessageCircle, BarChart, Lightbulb, ChevronDown, Target, 
-  Play, Square, RotateCcw, Activity, AlertCircle, CheckCircle2,
-  Clock, Database, TrendingUp, Brain, Network, Settings
+  AlertCircle, CheckCircle2, Clock, Database, TrendingUp, Brain, Network, Settings
 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNotifications } from '@/components/ui/notification';
 
 interface AgentMetrics {
   executionTime?: number;
@@ -226,465 +227,114 @@ const getStatusText = (status: Agent['status'], progress?: number) => {
 };
 
 export default function AgentList() {
-  const [agents, setAgents] = useState<Agent[]>(initialAgents);
-  const [execution, setExecution] = useState<WorkflowExecution>({
-    sessionId: '',
-    isRunning: false,
-    isPaused: false,
-    progress: {},
-    statuses: {},
-    results: {},
-    errors: {},
-    totalSteps: initialAgents.length,
-    completedSteps: 0
-  });
-  const [isConnected, setIsConnected] = useState(false);
   const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
-  const [systemMetrics, setSystemMetrics] = useState<SystemMetrics>({
-    activeAgents: 0,
-    completedTasks: 0,
-    errorRate: 0,
-    avgExecutionTime: 0,
-    memoryUsage: 0,
-    cpuUsage: 0
-  });
+  const { addNotification } = useNotifications();
+  const queryClient = useQueryClient();
 
-  // Check backend connection and system health
-  const checkConnection = useCallback(async () => {
-    try {
-      const response = await fetch('http://localhost:8000/api/v1/health');
-      if (response.ok) {
-        const healthData = await response.json();
-        setIsConnected(true);
-        
-        // Update system metrics if available
-        if (healthData.metrics) {
-          setSystemMetrics(prev => ({
-            ...prev,
-            ...healthData.metrics
-          }));
-        }
-      } else {
-        setIsConnected(false);
-        console.warn('Backend health check failed:', response.status);
-      }
-    } catch (error) {
-      console.error('Backend connection failed:', error);
-      setIsConnected(false);
-    }
-  }, []);
-
-  // Fetch comprehensive agent execution status and workflow state
-  const fetchAgentStatus = useCallback(async () => {
-    if (!isConnected || !execution.sessionId) return;
-
-    try {
-      const response = await fetch(`http://localhost:8000/api/v1/agents/execution/${execution.sessionId}/status`);
-      if (response.ok) {
-        const data = await response.json();
-        
-        setExecution(prev => ({
-          ...prev,
-          isRunning: data.isRunning ?? false,
-          isPaused: data.isPaused ?? false,
-          currentAgent: data.currentAgent,
-          currentStep: data.currentStep,
-          progress: data.progress ?? {},
-          statuses: data.statuses ?? {},
-          results: data.results ?? {},
-          errors: data.errors ?? {},
-          estimatedCompletion: data.estimatedCompletion,
-          completedSteps: data.completedSteps ?? 0
-        }));
-
-        // Update individual agent statuses with enhanced metrics
-        setAgents(prev => prev.map(agent => ({
-          ...agent,
-          status: data.statuses?.[agent.id] ?? agent.status,
-          progress: data.progress?.[agent.id],
-          lastUpdate: data.lastUpdate ?? new Date().toISOString(),
-          error: data.errors?.[agent.id],
-          metrics: {
-            ...agent.metrics,
-            ...data.metrics?.[agent.id]
-          }
-        })));
-
-        // Update system metrics
-        if (data.systemMetrics) {
-          setSystemMetrics(prev => ({
-            ...prev,
-            ...data.systemMetrics
-          }));
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch agent status:', error);
-      // Set agents to error state if unable to fetch status
-      setAgents(prev => prev.map(agent => ({
-        ...agent,
-        status: agent.status === 'processing' ? 'error' : agent.status,
-        error: 'Connection lost during execution'
-      })));
-    }
-  }, [isConnected, execution.sessionId]);
-
-  // Start intelligent agent workflow execution
-  const startExecution = async (query: string = "Analyze uploaded data", options: any = {}) => {
-    if (!isConnected) {
-      console.error('Backend not connected - cannot start execution');
-      return;
-    }
-
-    try {
-      const sessionId = execution.sessionId ?? `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-      
-      const requestBody = {
-        query,
-        session_id: sessionId,
-        agents: agents.map(a => ({
-          id: a.id,
-          priority: a.priority,
-          dependencies: a.dependencies,
-          capabilities: a.capabilities
-        })),
-        workflow_config: {
-          sequential: true,
-          retry_on_error: true,
-          max_retries: 3,
-          timeout_minutes: 30,
-          ...options
-        }
-      };
-
+  // Agent workflow execution mutation
+  const executeWorkflow = useMutation({
+    mutationFn: async (query: string) => {
       const response = await fetch('http://localhost:8000/api/v1/agents/workflow/execute', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
       });
+      if (!response.ok) throw new Error('Failed to start workflow');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      addNotification({ type: 'success', title: 'Workflow started', message: `Session: ${data.session_id}` });
+      queryClient.invalidateQueries({ queryKey: ['agent-status', data.session_id] });
+    },
+    onError: (error: any) => {
+      addNotification({ type: 'error', title: 'Workflow error', message: error.message });
+    },
+  });
 
-      if (response.ok) {
-        const data = await response.json();
-        setExecution(prev => ({
-          ...prev,
-          sessionId: data.session_id ?? sessionId,
-          isRunning: true,
-          isPaused: false,
-          startTime: Date.now(),
-          totalSteps: agents.length,
-          completedSteps: 0
-        }));
+  // Agent status polling
+  const { data: agentStatus, isLoading, isError, refetch } = useQuery({
+    queryKey: ['agent-status'],
+    queryFn: async () => {
+      const response = await fetch('http://localhost:8000/api/v1/agents/workflow/status/current');
+      if (!response.ok) throw new Error('Failed to fetch agent status');
+      return response.json();
+    },
+    refetchInterval: 2000,
+  });
 
-        // Initialize all agents to waiting/queued state based on dependencies
-        setAgents(prev => prev.map(agent => ({
-          ...agent,
-          status: agent.dependencies?.length ? 'waiting' : 'queued',
-          progress: 0,
-          error: undefined,
-          metrics: {
-            executionTime: 0,
-            dataProcessed: 0,
-            accuracy: 0,
-            memoryUsage: 0,
-            tokensUsed: 0
-          }
-        })));
-      } else {
-        throw new Error(`Failed to start execution: ${response.status}`);
-      }
-    } catch (error) {
-      console.error('Failed to start execution:', error);
-      setAgents(prev => prev.map(agent => ({
-        ...agent,
-        status: 'error',
-        error: `Failed to start execution: ${error instanceof Error ? error.message : 'Unknown error'}`
-      })));
-    }
-  };
-
-  // Pause workflow execution
-  const pauseExecution = async () => {
-    if (!execution.sessionId || !execution.isRunning) return;
-
-    try {
-      const response = await fetch(`http://localhost:8000/api/v1/agents/execution/${execution.sessionId}/pause`, {
-        method: 'POST'
-      });
-
-      if (response.ok) {
-        setExecution(prev => ({
-          ...prev,
-          isPaused: true
-        }));
-
-        setAgents(prev => prev.map(agent => ({
-          ...agent,
-          status: agent.status === 'processing' ? 'paused' : agent.status
-        })));
-      }
-    } catch (error) {
-      console.error('Failed to pause execution:', error);
-    }
-  };
-
-  // Resume workflow execution
-  const resumeExecution = async () => {
-    if (!execution.sessionId || !execution.isPaused) return;
-
-    try {
-      const response = await fetch(`http://localhost:8000/api/v1/agents/execution/${execution.sessionId}/resume`, {
-        method: 'POST'
-      });
-
-      if (response.ok) {
-        setExecution(prev => ({
-          ...prev,
-          isPaused: false
-        }));
-
-        setAgents(prev => prev.map(agent => ({
-          ...agent,
-          status: agent.status === 'paused' ? 'processing' : agent.status
-        })));
-      }
-    } catch (error) {
-      console.error('Failed to resume execution:', error);
-    }
-  };
-
-  // Stop and terminate workflow execution
-  const stopExecution = async () => {
-    if (!execution.sessionId) return;
-
-    try {
-      const response = await fetch(`http://localhost:8000/api/v1/agents/execution/${execution.sessionId}/stop`, {
-        method: 'POST'
-      });
-
-      if (response.ok) {
-        setExecution(prev => ({
-          ...prev,
-          isRunning: false,
-          isPaused: false
-        }));
-
-        setAgents(prev => prev.map(agent => ({
-          ...agent,
-          status: ['processing', 'queued', 'waiting'].includes(agent.status) ? 'idle' : agent.status
-        })));
-      }
-    } catch (error) {
-      console.error('Failed to stop execution:', error);
-    }
-  };
-
-  // Reset all agents and clear workflow state
-  const resetAgents = () => {
-    setAgents(prev => prev.map(agent => ({
-      ...agent,
-      status: 'idle',
-      progress: 0,
-      error: undefined,
-      lastUpdate: undefined,
-      metrics: {
-        executionTime: 0,
-        dataProcessed: 0,
-        accuracy: 0,
-        memoryUsage: 0,
-        tokensUsed: 0
-      }
-    })));
-    
-    setExecution({
-      sessionId: '',
-      isRunning: false,
-      isPaused: false,
-      progress: {},
-      statuses: {},
-      results: {},
-      errors: {},
-      totalSteps: initialAgents.length,
-      completedSteps: 0
-    });
-
-    setSystemMetrics({
-      activeAgents: 0,
-      completedTasks: 0,
-      errorRate: 0,
-      avgExecutionTime: 0,
-      memoryUsage: 0,
-      cpuUsage: 0
-    });
-  };
-
-  // Initialize and start monitoring systems
-  useEffect(() => {
-    checkConnection();
-    
-    // Create initial session with enhanced tracking
-    if (!execution.sessionId) {
-      const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-      setExecution(prev => ({
-        ...prev,
-        sessionId: newSessionId,
-        totalSteps: initialAgents.length
-      }));
-    }
-
-    const healthInterval = setInterval(checkConnection, 30000); // Check every 30s
-    return () => clearInterval(healthInterval);
-  }, [checkConnection]);
-
-  // Enhanced polling for status updates with adaptive frequency
-  useEffect(() => {
-    if (!execution.isRunning && !execution.isPaused) return;
-
-    const pollFrequency = execution.isRunning ? 1500 : 5000; // Faster when active
-    const statusInterval = setInterval(fetchAgentStatus, pollFrequency);
-    return () => clearInterval(statusInterval);
-  }, [execution.isRunning, execution.isPaused, fetchAgentStatus]);
-
-  const toggleExpanded = (agentId: string) => {
-    setExpandedAgent(expandedAgent === agentId ? null : agentId);
-  };
-
+  // Accessibility: keyboard navigation for agent cards
   const handleAgentCardKeyDown = (event: React.KeyboardEvent, agentId: string) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      toggleExpanded(agentId);
+      setExpandedAgent(expandedAgent === agentId ? null : agentId);
     }
   };
 
+  if (isLoading) {
+    return <output className="p-6 text-center text-gray-400" aria-live="polite">Loading agent workflow...</output>;
+  }
+  if (isError) {
+    return <div className="p-6 text-center text-red-500" role="alert">Failed to load agent workflow. <button onClick={() => refetch()} className="underline">Retry</button></div>;
+  }
+
+  // Render agent list from agentStatus
+  const agents = agentStatus?.agents ?? [];
+  const workflowRunning = agentStatus?.isRunning;
+  const sessionId = agentStatus?.session_id;
+  const systemMetrics = agentStatus?.systemMetrics ?? {};
+
   return (
-    <div className="flex flex-col gap-4">
-      {/* Enhanced Control Panel */}
+    <div className="flex flex-col gap-4" aria-label="Agent Workflow List">
+      {/* Control Panel */}
       <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-2xl p-4 shadow-2xl shadow-black/25">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+            <div className={`w-3 h-3 rounded-full ${agentStatus?.connected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
             <span className="text-sm font-medium text-gray-300">
-              Agent System {isConnected ? 'Connected' : 'Disconnected'}
+              Agent System {agentStatus?.connected ? 'Connected' : 'Disconnected'}
             </span>
             <div className="flex items-center gap-2 text-xs text-gray-400">
-              <Activity size={12} />
-              <span>{systemMetrics.activeAgents} active</span>
+              <span>{systemMetrics.activeAgents ?? 0} active</span>
             </div>
           </div>
           <div className="text-xs text-gray-400">
-            Session: {execution.sessionId.slice(-8)}
+            Session: {sessionId ? String(sessionId).slice(-8) : 'N/A'}
           </div>
         </div>
-
-        {/* System Metrics Bar */}
-        {isConnected && (
-          <div className="grid grid-cols-4 gap-3 mb-3 text-xs">
-            <div className="bg-white/5 rounded-lg p-2">
-              <div className="text-gray-400">Tasks</div>
-              <div className="text-cyan-400 font-semibold">{systemMetrics.completedTasks}</div>
-            </div>
-            <div className="bg-white/5 rounded-lg p-2">
-              <div className="text-gray-400">Error Rate</div>
-              <div className="text-amber-400 font-semibold">{systemMetrics.errorRate.toFixed(1)}%</div>
-            </div>
-            <div className="bg-white/5 rounded-lg p-2">
-              <div className="text-gray-400">Avg Time</div>
-              <div className="text-green-400 font-semibold">{systemMetrics.avgExecutionTime.toFixed(1)}s</div>
-            </div>
-            <div className="bg-white/5 rounded-lg p-2">
-              <div className="text-gray-400">Memory</div>
-              <div className="text-purple-400 font-semibold">{systemMetrics.memoryUsage.toFixed(1)}%</div>
-            </div>
-          </div>
-        )}
-        
         <div className="flex gap-2">
           <button
-            onClick={() => startExecution()}
-            disabled={execution.isRunning || !isConnected}
+            onClick={() => executeWorkflow.mutate('Analyze uploaded data')}
+            disabled={(workflowRunning ?? false) || !(agentStatus?.connected ?? false)}
             className="flex items-center gap-2 px-4 py-2 bg-cyan-500/20 border border-cyan-500/30 rounded-lg text-cyan-400 text-sm font-medium hover:bg-cyan-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
           >
-            <Play size={16} />
-            {execution.isRunning ? 'Running...' : 'Start Analysis'}
+            Start Analysis
           </button>
-          
-          {execution.isRunning && !execution.isPaused && (
-            <button
-              onClick={pauseExecution}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-500/20 border border-purple-500/30 rounded-lg text-purple-400 text-sm font-medium hover:bg-purple-500/30 transition-all duration-300"
-            >
-              <Square size={16} />
-              Pause
-            </button>
-          )}
-
-          {execution.isPaused && (
-            <button
-              onClick={resumeExecution}
-              className="flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-500/30 rounded-lg text-green-400 text-sm font-medium hover:bg-green-500/30 transition-all duration-300"
-            >
-              <Play size={16} />
-              Resume
-            </button>
-          )}
-          
           <button
-            onClick={stopExecution}
-            disabled={!execution.isRunning && !execution.isPaused}
+            onClick={() => addNotification({ type: 'info', title: 'Stop not implemented' })}
+            disabled={!workflowRunning}
             className="flex items-center gap-2 px-4 py-2 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm font-medium hover:bg-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
           >
-            <Square size={16} />
             Stop
           </button>
-          
           <button
-            onClick={resetAgents}
-            disabled={execution.isRunning || execution.isPaused}
+            onClick={() => addNotification({ type: 'info', title: 'Reset not implemented' })}
+            disabled={workflowRunning}
             className="flex items-center gap-2 px-4 py-2 bg-gray-500/20 border border-gray-500/30 rounded-lg text-gray-400 text-sm font-medium hover:bg-gray-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
           >
-            <RotateCcw size={16} />
             Reset
           </button>
         </div>
-
-        {/* Progress Overview */}
-        {(execution.isRunning || execution.isPaused) && (
-          <div className="mt-3 p-3 bg-white/5 rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-300">Workflow Progress</span>
-              <span className="text-xs text-gray-400">
-                {execution.completedSteps}/{execution.totalSteps} steps
-              </span>
-            </div>
-            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500"
-                style={{ width: `${((execution.completedSteps ?? 0) / (execution.totalSteps ?? 1)) * 100}%` }}
-              />
-            </div>
-          </div>
-        )}
       </div>
-
-      {/* Enhanced Agent List */}
+      {/* Agent List */}
       <div className="flex flex-col gap-3">
-        {agents.map((agent, index) => (
+        {agents.map((agent: any, index: number) => (
           <div key={agent.id} className="relative">
-            {/* Main Agent Card */}
-            <div
-              role="button"
-              tabIndex={0}
+            <button
+              type="button"
               aria-expanded={expandedAgent === agent.id}
-              aria-label={`${agent.name} - ${getStatusText(agent.status, agent.progress)}`}
-              className={`
-                backdrop-blur-md border rounded-2xl p-4 
-                transition-all duration-300 cursor-pointer 
-                hover:transform hover:scale-[1.02] hover:shadow-2xl
-                group relative overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-400/50
-                ${getStatusColor(agent.status)}
-              `}
-              onClick={() => toggleExpanded(agent.id)}
+              aria-label={`${agent.name} - ${agent.status}`}
+              className={`backdrop-blur-md border rounded-2xl p-4 transition-all duration-300 cursor-pointer group relative overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-400/50 ${getStatusColor(agent.status)}`}
+              onClick={() => setExpandedAgent(expandedAgent === agent.id ? null : agent.id)}
               onKeyDown={(e) => handleAgentCardKeyDown(e, agent.id)}
             >
               {/* Background Glow Effect */}
@@ -741,9 +391,9 @@ export default function AgentList() {
                 {/* Status and Expand Button */}
                 <div className="flex items-center gap-3">
                   {/* Current Step Indicator */}
-                  {execution.currentAgent === agent.id && execution.currentStep && (
+                  {agentStatus.currentAgent === agent.id && agentStatus.currentStep && (
                     <div className="text-xs text-cyan-400 bg-cyan-400/10 px-2 py-1 rounded">
-                      {execution.currentStep}
+                      {agentStatus.currentStep}
                     </div>
                   )}
                   
@@ -754,7 +404,7 @@ export default function AgentList() {
                   />
                 </div>
               </div>                {/* Enhanced Metrics Display */}
-                {agent.metrics && (execution.isRunning || execution.isPaused || agent.status === 'complete') && (
+                {agent.metrics && (agentStatus.isRunning || agentStatus.isPaused || agent.status === 'complete') && (
                   <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                     {agent.metrics.executionTime && agent.metrics.executionTime > 0 && (
                       <div className="flex items-center gap-1 text-gray-400">
@@ -784,9 +434,8 @@ export default function AgentList() {
                   <span>{agent.error}</span>
                 </div>
               )}
-            </div>
-
-            {/* Enhanced Expanded Details */}
+            </button>
+            {/* Expanded Details */}
             {expandedAgent === agent.id && (
               <div className="mt-2 backdrop-blur-md bg-white/5 border border-white/10 rounded-xl p-4 shadow-lg">
                 <div className="grid grid-cols-2 gap-4 text-sm mb-4">
@@ -815,7 +464,7 @@ export default function AgentList() {
                   <div className="mb-4">
                     <div className="text-sm font-medium text-gray-300 mb-2">Dependencies:</div>
                     <div className="flex flex-wrap gap-1">
-                      {agent.dependencies.map(dep => (
+                      {agent.dependencies.map((dep: string) => (
                         <span key={dep} className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">
                           {dep}
                         </span>
@@ -873,12 +522,12 @@ export default function AgentList() {
                 )}
 
                 {/* Agent Results */}
-                {execution.results[agent.id] && (
+                {agentStatus.results[agent.id] && (
                   <div className="mb-3">
                     <div className="text-sm font-medium text-gray-300 mb-2">Execution Results:</div>
                     <div className="bg-white/5 rounded-lg p-3 max-h-40 overflow-y-auto">
                       <pre className="text-xs text-gray-400 whitespace-pre-wrap">
-                        {JSON.stringify(execution.results[agent.id], null, 2)}
+                        {JSON.stringify(agentStatus.results[agent.id], null, 2)}
                       </pre>
                     </div>
                   </div>
@@ -903,69 +552,18 @@ export default function AgentList() {
           </div>
         ))}
       </div>
-
-      {/* Enhanced Workflow Execution Info */}
-      {(execution.isRunning || execution.isPaused) && (
+      {/* Workflow Execution Info */}
+      {workflowRunning && (
         <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-xl p-4 shadow-lg">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-gray-300">
-                Workflow Status: {execution.isPaused ? 'Paused' : 'Executing'}
-              </span>
-              {execution.currentAgent && (
-                <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded">
-                  Current: {agents.find(a => a.id === execution.currentAgent)?.name ?? execution.currentAgent}
-                </span>
-              )}
-            </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-300">
+              Workflow Executing: {agentStatus?.currentAgent ?? 'Initializing...'}
+            </span>
             <div className="flex items-center gap-2 text-xs text-gray-400">
-              <div className={`w-2 h-2 rounded-full ${execution.isPaused ? 'bg-purple-400' : 'bg-cyan-400 animate-pulse'}`} />
-              <span>
-                {execution.startTime ? 
-                  `Running for ${Math.round((Date.now() - execution.startTime) / 1000)}s` : 
-                  'Starting...'
-                }
-              </span>
-              {execution.estimatedCompletion && (
-                <span className="ml-2">
-                  ETA: {Math.round((execution.estimatedCompletion - Date.now()) / 1000)}s
-                </span>
-              )}
+              <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
+              Running for {agentStatus?.startTime ? Math.round((Date.now() - agentStatus.startTime) / 1000) : 0}s
             </div>
           </div>
-
-          {/* Current Step Information */}
-          {execution.currentStep && (
-            <div className="text-xs text-gray-400 bg-white/5 rounded p-2 mb-3">
-              <span className="font-medium">Current Step: </span>
-              <span>{execution.currentStep}</span>
-            </div>
-          )}
-
-          {/* Workflow Steps Progress */}
-          <div className="grid grid-cols-4 gap-2">
-            {agents.map((agent, index) => (
-              <div key={agent.id} className="flex flex-col items-center gap-1">
-                <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold transition-all duration-300 ${getWorkflowStepStyle(agent.status)}`}>
-                  {index + 1}
-                </div>
-                <span className="text-xs text-gray-400 text-center">{agent.name.split(' ')[0]}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* System Status Footer */}
-      {!isConnected && (
-        <div className="backdrop-blur-md bg-red-500/10 border border-red-500/30 rounded-xl p-3 shadow-lg">
-          <div className="flex items-center gap-2 text-red-400">
-            <AlertCircle size={16} />
-            <span className="text-sm font-medium">System Offline</span>
-          </div>
-          <p className="text-xs text-gray-400 mt-1">
-            Backend connection lost. Please check if the server is running on localhost:8000
-          </p>
         </div>
       )}
     </div>

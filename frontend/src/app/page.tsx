@@ -1,5 +1,5 @@
-import ModernDashboard from "@/components/ModernDashboard";
+import TwoColumnGlassDashboard from "@/components/TwoColumnGlassDashboard";
 
 export default function Home() {
-  return <ModernDashboard />;
+  return <TwoColumnGlassDashboard />;
 }

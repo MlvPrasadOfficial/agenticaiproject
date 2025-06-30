@@ -41,6 +41,9 @@ export function useNotifications() {
   return context;
 }
 
+// Alias for compatibility with WebSocket hooks
+export const useNotification = useNotifications;
+
 interface NotificationProviderProps {
   children: React.ReactNode;
   position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center';
@@ -226,9 +229,13 @@ function NotificationItem({ notification, onRemove, index, position }: Notificat
         damping: 30,
         layout: { duration: 0.2 }
       }}
+      role={notification.type === 'error' || notification.type === 'warning' ? 'alert' : 'status'}
+      aria-live={notification.type === 'error' ? 'assertive' : 'polite'}
+      aria-atomic="true"
+      aria-label={`${notification.type} notification: ${notification.title}`}
       className={`
         mb-4 relative overflow-hidden rounded-lg border backdrop-blur-sm
-        shadow-lg transition-all duration-200
+        shadow-lg transition-all duration-200 focus-within:ring-2 focus-within:ring-primary
         ${getTypeClasses()}
         ${isHovered ? 'shadow-xl scale-105' : ''}
       `}
@@ -254,14 +261,14 @@ function NotificationItem({ notification, onRemove, index, position }: Notificat
             )}
             
             {notification.actions && notification.actions.length > 0 && (
-              <div className="flex gap-2 mt-3">
+              <div className="flex gap-2 mt-3" role="group" aria-label="Notification actions">
                 {notification.actions.map((action, actionIndex) => (
                   <button
                     key={actionIndex}
                     onClick={action.onClick}
                     className={`
                       px-3 py-1.5 text-xs font-medium rounded
-                      transition-colors duration-200
+                      transition-colors duration-200 focus:ring-2 focus:ring-primary focus:ring-offset-1 focus:outline-none
                       ${getActionButtonClasses(action.variant)}
                     `}
                   >
@@ -275,10 +282,10 @@ function NotificationItem({ notification, onRemove, index, position }: Notificat
           {notification.dismissible && (
             <button
               onClick={() => onRemove(notification.id)}
-              className="flex-shrink-0 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
-              aria-label="Dismiss notification"
+              className="flex-shrink-0 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 focus:ring-2 focus:ring-primary focus:ring-offset-1 focus:outline-none"
+              aria-label={`Dismiss ${notification.type} notification: ${notification.title}`}
             >
-              <X className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+              <X className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" aria-hidden="true" />
             </button>
           )}
         </div>

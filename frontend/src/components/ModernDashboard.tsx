@@ -8,6 +8,9 @@ import {
 
 // Import UI components
 import FileUploadQueue from './ui/file-upload-queue';
+import ChatInterface from './ChatInterface';
+import AgentExecutor from './AgentExecutor';
+import { useDataPreview, useExecuteAgent } from '@/hooks/api';
 
 // Types
 interface Agent {
@@ -26,6 +29,7 @@ interface UploadedFile {
   size: number;
   type: string;
   uploadedAt: Date;
+  fileId?: string; // Backend file ID for API calls
 }
 
 interface ModernDashboardProps {
@@ -37,9 +41,7 @@ export default function ModernDashboard({ className = '' }: Readonly<ModernDashb
   const [searchQuery, setSearchQuery] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
-
-  // Define the 4 core agents as specified in the design
-  const agents: Agent[] = [
+  const [agents, setAgents] = useState<Agent[]>([
     {
       id: 'planning',
       name: 'Planning Agent',
@@ -76,16 +78,17 @@ export default function ModernDashboard({ className = '' }: Readonly<ModernDashb
       color: 'from-amber-500 to-orange-600',
       gradient: 'bg-gradient-to-br from-amber-500/20 to-orange-600/20'
     }
-  ];
+  ]);
 
   // Handlers
   const handleUploadComplete = useCallback((files: any[]) => {
     const newFiles: UploadedFile[] = files.map(file => ({
       id: crypto.randomUUID(),
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      uploadedAt: new Date()
+      name: file.file?.name || 'Unknown',
+      size: file.file?.size || 0,
+      type: file.file?.type || 'Unknown',
+      uploadedAt: new Date(),
+      fileId: file.id // Backend file ID for API calls
     }));
     
     setUploadedFiles(prev => [...prev, ...newFiles]);
@@ -99,6 +102,25 @@ export default function ModernDashboard({ className = '' }: Readonly<ModernDashb
     setSearchQuery(query);
     console.log('Searching for:', query);
   }, []);
+
+  const handleAgentStatusChange = useCallback((agentId: string, status: Agent['status']) => {
+    setAgents(prev => prev.map(agent => 
+      agent.id === agentId ? { ...agent, status } : agent
+    ));
+  }, []);
+
+  const handleAnalyzeFile = useCallback((fileId: string) => {
+    // Find the file
+    const file = uploadedFiles.find(f => f.fileId === fileId || f.id === fileId);
+    if (!file) return;
+
+    // Execute data analysis agent with file context
+    const dataAgent = agents.find(a => a.id === 'data');
+    if (dataAgent) {
+      handleAgentStatusChange('data', 'processing');
+      // The AgentExecutor will handle the actual execution
+    }
+  }, [uploadedFiles, agents, handleAgentStatusChange]);
 
   const handleAgentSelect = (agent: Agent) => {
     setSelectedAgent(agent);
@@ -196,17 +218,43 @@ export default function ModernDashboard({ className = '' }: Readonly<ModernDashb
 
                 {uploadedFiles.length > 0 && (
                   <div className="mt-6 p-4 bg-white/5 rounded-xl border border-white/10">
-                    <h4 className="text-sm font-semibold text-white mb-3">Uploaded Files</h4>
-                    <div className="space-y-2">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-sm font-semibold text-white">Uploaded Files</h4>
+                      <span className="text-xs text-slate-500">{uploadedFiles.length} file{uploadedFiles.length !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div className="space-y-3">
                       {uploadedFiles.map((file) => (
-                        <div key={file.id} className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
-                          <div className="flex items-center space-x-2">
-                            <FileText className="w-4 h-4 text-blue-400" />
-                            <span className="text-white text-sm font-medium">{file.name}</span>
+                        <div key={file.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
+                          <div className="flex items-center space-x-3 flex-1 min-w-0">
+                            <FileText className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-white text-sm font-medium block truncate">{file.name}</span>
+                              <div className="flex items-center space-x-2 text-xs text-slate-500">
+                                <span>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                                <span>•</span>
+                                <span>{file.type}</span>
+                                <span>•</span>
+                                <span>{file.uploadedAt.toLocaleDateString()}</span>
+                              </div>
+                            </div>
                           </div>
-                          <span className="text-slate-500 text-xs">
-                            {(file.size / 1024 / 1024).toFixed(2)} MB
-                          </span>
+                          <div className="flex items-center space-x-2">
+                            <button 
+                              onClick={() => {
+                                // Open data preview (could implement modal or sidebar)
+                                console.log('Preview file:', file.id);
+                              }}
+                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition-colors"
+                            >
+                              Preview
+                            </button>
+                            <button 
+                              onClick={() => handleAnalyzeFile(file.fileId || file.id)}
+                              className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs transition-colors"
+                            >
+                              Analyze
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -263,10 +311,10 @@ export default function ModernDashboard({ className = '' }: Readonly<ModernDashb
                           </div>
 
                           {/* Status */}
-                          <div className="flex items-center space-x-2">
-                            <div className={`w-2 h-2 rounded-full ${getStatusColor(agent.status)}`} />
-                            <span className="text-slate-500 text-xs uppercase tracking-wide">{agent.status}</span>
-                          </div>
+                          <AgentExecutor 
+                            agent={agent}
+                            onStatusChange={handleAgentStatusChange}
+                          />
                         </div>
                       </div>
                     </div>
@@ -317,33 +365,10 @@ export default function ModernDashboard({ className = '' }: Readonly<ModernDashb
             {/* Chat Interface */}
             {selectedAgent && (
               <div className="max-w-3xl mx-auto">
-                <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className={`w-10 h-10 bg-gradient-to-br ${selectedAgent.color} rounded-lg flex items-center justify-center`}>
-                      <selectedAgent.icon className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-white">{selectedAgent.name}</h4>
-                      <p className="text-slate-500 text-sm">Ready to assist with your analysis</p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="h-48 bg-white/5 rounded-xl border border-white/10 p-3 overflow-y-auto">
-                      <p className="text-slate-400 text-center text-sm">Chat interface will appear here</p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <input
-                        type="text"
-                        placeholder={`Ask ${selectedAgent.name} anything...`}
-                        className="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500/50 text-sm"
-                      />
-                      <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all duration-200 text-sm">
-                        Send
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <ChatInterface 
+                  selectedAgent={selectedAgent} 
+                  onClose={() => setSelectedAgent(null)}
+                />
               </div>
             )}
           </div>

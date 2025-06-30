@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { QueryProvider } from "@/components/providers/query-provider";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
+// import { SkipLink } from "@/lib/accessibility";
 import "./globals.css";
+import "../styles/accessibility.css";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -30,9 +33,14 @@ export default function RootLayout({
       <body
         className={`${inter.variable} antialiased`}
       >
-        <QueryProvider>
-          {children}
-        </QueryProvider>
+        {/* <SkipLink href="#main-content">Skip to main content</SkipLink> */}
+        <ErrorBoundary>
+          <QueryProvider>
+            <main id="main-content" tabIndex={-1}>
+              {children}
+            </main>
+          </QueryProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

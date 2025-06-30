@@ -6,8 +6,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import DataStatisticsDashboard from '../components/DataStatisticsDashboard';
-import InteractiveCharts from '../components/InteractiveCharts';
+import DataStatisticsDashboard from '../../components/DataStatisticsDashboard';
+import InteractiveCharts from '../../components/InteractiveCharts';
 import { BarChart3, LineChart, Database, TrendingUp, Download, RefreshCw } from 'lucide-react';
 
 interface DataVisualizationPageProps {

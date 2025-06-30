@@ -7,7 +7,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import { LineChart, BarChart, Scatter, Download, ZoomIn, ZoomOut, RotateCcw, Filter } from 'lucide-react';
+import { LineChart, BarChart, Download, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 
 interface DataPoint {
   x: number | string;
@@ -31,7 +31,7 @@ interface InteractiveChartsProps {
   loading?: boolean;
 }
 
-export default function InteractiveCharts({ chartData, fileId, loading }: InteractiveChartsProps) {
+export default function InteractiveCharts({ chartData, fileId, loading }: Readonly<InteractiveChartsProps>) {
   const lineChartRef = useRef<SVGSVGElement>(null);
   const barChartRef = useRef<SVGSVGElement>(null);
   const scatterChartRef = useRef<SVGSVGElement>(null);
@@ -208,12 +208,12 @@ export default function InteractiveCharts({ chartData, fileId, loading }: Intera
       .attr('x', 0 - (height / 2))
       .attr('dy', '1em')
       .style('text-anchor', 'middle')
-      .text(sampleData.find(d => d.type === 'line')?.yLabel || 'Y-Axis');
+      .text(sampleData.find(d => d.type === 'line')?.yLabel ?? 'Y-Axis');
 
     g.append('text')
       .attr('transform', `translate(${width / 2}, ${height + margin.bottom})`)
       .style('text-anchor', 'middle')
-      .text(sampleData.find(d => d.type === 'line')?.xLabel || 'X-Axis');
+      .text(sampleData.find(d => d.type === 'line')?.xLabel ?? 'X-Axis');
 
   }, [sampleData, loading, zoomLevel]);
 
@@ -239,7 +239,7 @@ export default function InteractiveCharts({ chartData, fileId, loading }: Intera
       .padding(0.1);
 
     const y = d3.scaleLinear()
-      .domain([0, d3.max(barData, d => d.y) || 0])
+      .domain([0, d3.max(barData, d => d.y) ?? 0])
       .range([height, 0]);
 
     const color = d3.scaleOrdinal(d3.schemeCategory10);
@@ -257,7 +257,7 @@ export default function InteractiveCharts({ chartData, fileId, loading }: Intera
       .data(barData)
       .enter().append('rect')
       .attr('class', 'bar')
-      .attr('x', d => x(d.x as string) || 0)
+      .attr('x', d => x(d.x as string) ?? 0)
       .attr('width', x.bandwidth())
       .attr('y', height)
       .attr('height', 0)
@@ -320,7 +320,7 @@ export default function InteractiveCharts({ chartData, fileId, loading }: Intera
       .attr('cx', d => x(d.x as number))
       .attr('cy', d => y(d.y))
       .attr('r', 5)
-      .attr('fill', d => color(d.category || 'default'))
+      .attr('fill', d => color(d.category ?? 'default'))
       .attr('opacity', 0.7)
       .style('cursor', 'pointer')
       .on('mouseover', function(event, d) {
@@ -355,7 +355,7 @@ export default function InteractiveCharts({ chartData, fileId, loading }: Intera
       .range([0, width]);
 
     const y = d3.scaleLinear()
-      .domain([0, d3.max(areaData, d => d.y) || 0])
+      .domain([0, d3.max(areaData, d => d.y) ?? 0])
       .range([height, 0]);
 
     // Add axes
@@ -379,7 +379,7 @@ export default function InteractiveCharts({ chartData, fileId, loading }: Intera
       .attr('id', 'area-gradient')
       .attr('gradientUnits', 'userSpaceOnUse')
       .attr('x1', 0).attr('y1', y(0))
-      .attr('x2', 0).attr('y2', y(d3.max(areaData, d => d.y) || 0));
+      .attr('x2', 0).attr('y2', y(d3.max(areaData, d => d.y) ?? 0));
 
     gradient.append('stop')
       .attr('offset', '0%')
@@ -456,7 +456,7 @@ export default function InteractiveCharts({ chartData, fileId, loading }: Intera
                 >
                   {type === 'line' && <LineChart className="h-4 w-4 inline mr-1" />}
                   {type === 'bar' && <BarChart className="h-4 w-4 inline mr-1" />}
-                  {type === 'scatter' && <Scatter className="h-4 w-4 inline mr-1" />}
+                  {type === 'scatter' && <BarChart className="h-4 w-4 inline mr-1" />}
                   {type.charAt(0).toUpperCase() + type.slice(1)}
                 </button>
               ))}
@@ -500,7 +500,7 @@ export default function InteractiveCharts({ chartData, fileId, loading }: Intera
       <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">
-            {sampleData.find(d => d.type === selectedChart)?.title || 'Interactive Chart'}
+            {sampleData.find(d => d.type === selectedChart)?.title ?? 'Interactive Chart'}
           </h3>
           {hoveredPoint && (
             <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm">

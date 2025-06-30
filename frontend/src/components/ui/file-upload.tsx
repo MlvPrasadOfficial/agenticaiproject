@@ -113,51 +113,112 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   return (
     <div className={`w-full ${className}`}>
-      {/* Drop Zone */}
+      {/* Professional Drop Zone */}
       <div
         {...getRootProps()}
         className={`
-          relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 cursor-pointer
+          relative border-2 border-dashed rounded-3xl p-12 text-center transition-all duration-500 cursor-pointer group
           ${isDragActive || dragActive 
-            ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' 
-            : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+            ? 'border-blue-500 bg-blue-500/10 scale-105 shadow-2xl' 
+            : 'border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-900/10'
           }
-          ${uploadedFiles.length > 0 ? 'mb-6' : ''}
+          ${uploadedFiles.length > 0 ? 'mb-8' : ''}
+          backdrop-blur-sm bg-white/20 dark:bg-gray-800/20 shadow-xl hover:shadow-2xl
         `}
       >
         <input {...getInputProps()} ref={fileInputRef} />
         
-        <div className="flex flex-col items-center space-y-4">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 rounded-3xl overflow-hidden">
+          <div className={`absolute top-0 left-1/4 w-32 h-32 bg-blue-500/10 rounded-full filter blur-xl transition-all duration-700 ${
+            isDragActive ? 'animate-pulse scale-150' : 'group-hover:scale-125'
+          }`}></div>
+          <div className={`absolute bottom-0 right-1/4 w-24 h-24 bg-purple-500/10 rounded-full filter blur-xl transition-all duration-700 ${
+            isDragActive ? 'animate-pulse scale-150' : 'group-hover:scale-125'
+          }`} style={{ animationDelay: '0.5s' }}></div>
+        </div>
+        
+        <div className="relative z-10 flex flex-col items-center space-y-6">
+          {/* Enhanced Upload Icon */}
           <div className={`
-            p-4 rounded-full transition-colors duration-300
+            relative p-6 rounded-2xl transition-all duration-500
             ${isDragActive || dragActive 
-              ? 'bg-blue-100 dark:bg-blue-900/30' 
-              : 'bg-gray-100 dark:bg-gray-800'
+              ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white scale-110 shadow-lg' 
+              : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-600 dark:text-gray-300 group-hover:scale-110'
             }
           `}>
-            <Upload className={`w-8 h-8 ${isDragActive || dragActive ? 'text-blue-600' : 'text-gray-500'}`} />
+            <Upload className={`w-12 h-12 transition-all duration-500 ${
+              isDragActive ? 'animate-bounce' : 'group-hover:rotate-12'
+            }`} />
+            
+            {/* Icon Glow Effect */}
+            <div className={`absolute inset-0 rounded-2xl transition-opacity duration-500 ${
+              isDragActive 
+                ? 'bg-blue-500/30 opacity-100' 
+                : 'bg-gradient-to-br from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-50'
+            }`}></div>
           </div>
           
-          <div>
-            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {isDragActive ? 'Drop files here' : 'Drag & drop files here'}
+          {/* Professional Text Content */}
+          <div className="space-y-4 max-w-md">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {isDragActive ? 'Drop your files here' : 'Upload Data Files'}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+              {isDragActive 
+                ? 'Release to upload your files instantly' 
+                : 'Drag and drop your files here, or click to browse and select files from your computer'
+              }
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              or{' '}
+            
+            {/* Action Button */}
+            {!isDragActive && (
               <button
                 type="button"
                 onClick={handleFileInputClick}
-                className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
-                browse files
+                <Upload className="w-5 h-5 mr-2" />
+                Choose Files
               </button>
-            </p>
+            )}
           </div>
           
-          <div className="text-xs text-gray-400 dark:text-gray-500 space-y-1">
-            <p>Supported formats: {acceptedFileTypes.join(', ')}</p>
-            <p>Max file size: {formatFileSize(maxFileSize)}</p>
-            {multiple && <p>Max files: {maxFiles}</p>}
+          {/* Enhanced File Type Badges */}
+          <div className="flex flex-wrap justify-center gap-3 max-w-lg">
+            {acceptedFileTypes.map((type) => (
+              <span 
+                key={type}
+                className="px-3 py-1.5 text-xs font-medium bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 rounded-full border border-white/20 dark:border-gray-600/20 backdrop-blur-sm"
+              >
+                {type.replace('.', '').toUpperCase()}
+              </span>
+            ))}
+          </div>
+          
+          {/* Professional Upload Stats */}
+          <div className="grid grid-cols-3 gap-6 text-center text-sm">
+            <div className="space-y-1">
+              <div className="flex items-center justify-center">
+                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                <span className="font-medium text-gray-700 dark:text-gray-300">Max Files</span>
+              </div>
+              <div className="text-gray-500 dark:text-gray-400">{maxFiles}</div>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center justify-center">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                <span className="font-medium text-gray-700 dark:text-gray-300">Max Size</span>
+              </div>
+              <div className="text-gray-500 dark:text-gray-400">{formatFileSize(maxFileSize)}</div>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center justify-center">
+                <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                <span className="font-medium text-gray-700 dark:text-gray-300">Security</span>
+              </div>
+              <div className="text-gray-500 dark:text-gray-400">Encrypted</div>
+            </div>
           </div>
         </div>
       </div>

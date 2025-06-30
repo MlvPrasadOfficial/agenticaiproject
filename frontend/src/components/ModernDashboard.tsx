@@ -1,248 +1,353 @@
 'use client';
 
-import React, { useState } from 'react';
-import { FileText, MessageSquare, BarChart3, Settings } from 'lucide-react';
-import { HealthIndicator } from './ui/health-indicator';
+import React, { useState, useCallback } from 'react';
+import { 
+  Upload, BarChart3, Brain, MessageSquare, FileText, 
+  Database, Search, Target, Lightbulb, Zap
+} from 'lucide-react';
+
+// Import UI components
 import FileUploadQueue from './ui/file-upload-queue';
-import { UploadedFile } from './ui/file-upload';
-import DataTable, { DataColumn } from './ui/data-table';
 
-export default function ModernDashboard() {
-  const [activeTab, setActiveTab] = useState<'upload' | 'data' | 'chat' | 'settings'>('upload');
+// Types
+interface Agent {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  status: 'idle' | 'processing' | 'active' | 'complete';
+  color: string;
+  gradient: string;
+}
+
+interface UploadedFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  uploadedAt: Date;
+}
+
+interface ModernDashboardProps {
+  className?: string;
+}
+
+export default function ModernDashboard({ className = '' }: Readonly<ModernDashboardProps>) {
+  // State management
+  const [searchQuery, setSearchQuery] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [tableData, setTableData] = useState<Record<string, any>[]>([]);
-  const [tableColumns, setTableColumns] = useState<DataColumn[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
 
-  const handleUploadComplete = (files: UploadedFile[]) => {
-    // In a real app, this would process the uploaded files and convert to table data
-    console.log('Upload completed:', files);
+  // Define the 4 core agents as specified in the design
+  const agents: Agent[] = [
+    {
+      id: 'planning',
+      name: 'Planning Agent',
+      description: 'Analyzes requirements and creates strategic analysis plans',
+      icon: Target,
+      status: 'idle',
+      color: 'from-purple-500 to-violet-600',
+      gradient: 'bg-gradient-to-br from-purple-500/20 to-violet-600/20'
+    },
+    {
+      id: 'data',
+      name: 'Data Analysis Agent',
+      description: 'Processes and analyzes your data with advanced algorithms',
+      icon: BarChart3,
+      status: 'idle',
+      color: 'from-blue-500 to-cyan-600',
+      gradient: 'bg-gradient-to-br from-blue-500/20 to-cyan-600/20'
+    },
+    {
+      id: 'query',
+      name: 'Query Agent',
+      description: 'Handles natural language queries and data retrieval',
+      icon: MessageSquare,
+      status: 'idle',
+      color: 'from-green-500 to-emerald-600',
+      gradient: 'bg-gradient-to-br from-green-500/20 to-emerald-600/20'
+    },
+    {
+      id: 'insight',
+      name: 'Insight Agent',
+      description: 'Generates actionable insights and recommendations',
+      icon: Lightbulb,
+      status: 'idle',
+      color: 'from-amber-500 to-orange-600',
+      gradient: 'bg-gradient-to-br from-amber-500/20 to-orange-600/20'
+    }
+  ];
+
+  // Handlers
+  const handleUploadComplete = useCallback((files: any[]) => {
+    const newFiles: UploadedFile[] = files.map(file => ({
+      id: crypto.randomUUID(),
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      uploadedAt: new Date()
+    }));
     
-    // Mock data for demonstration
-    const mockData = [
-      { id: 1, name: 'Product A', sales: 15000, region: 'North', date: '2024-01-15' },
-      { id: 2, name: 'Product B', sales: 23000, region: 'South', date: '2024-01-16' },
-      { id: 3, name: 'Product C', sales: 18500, region: 'East', date: '2024-01-17' },
-      { id: 4, name: 'Product D', sales: 31000, region: 'West', date: '2024-01-18' },
-      { id: 5, name: 'Product E', sales: 12000, region: 'North', date: '2024-01-19' },
-    ];
+    setUploadedFiles(prev => [...prev, ...newFiles]);
+  }, []);
 
-    const mockColumns: DataColumn[] = [
-      { key: 'id', label: 'ID', type: 'number', width: 80 },
-      { key: 'name', label: 'Product Name', type: 'string' },
-      { key: 'sales', label: 'Sales', type: 'number', format: (value) => `$${value.toLocaleString()}` },
-      { key: 'region', label: 'Region', type: 'string' },
-      { key: 'date', label: 'Date', type: 'date' },
-    ];
-
-    setTableData(mockData);
-    setTableColumns(mockColumns);
-    setActiveTab('data');
-  };
-
-  const handleUploadError = (error: string) => {
+  const handleUploadError = useCallback((error: string) => {
     console.error('Upload error:', error);
+  }, []);
+
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+    console.log('Searching for:', query);
+  }, []);
+
+  const handleAgentSelect = (agent: Agent) => {
+    setSelectedAgent(agent);
   };
 
-  const handleDataExport = (data: Record<string, any>[]) => {
-    const csvContent = convertToCSV(data);
-    downloadCSV(csvContent, 'exported_data.csv');
-  };
-
-  const convertToCSV = (data: Record<string, any>[]): string => {
-    if (data.length === 0) return '';
-    
-    const headers = Object.keys(data[0]);
-    const csvHeaders = headers.join(',');
-    const csvRows = data.map(row => 
-      headers.map(header => `"${row[header]}"`).join(',')
-    );
-    
-    return [csvHeaders, ...csvRows].join('\n');
-  };
-
-  const downloadCSV = (content: string, filename: string) => {
-    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    if (link.download !== undefined) {
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', filename);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+  const getStatusColor = (status: Agent['status']) => {
+    switch (status) {
+      case 'idle': return 'bg-slate-400';
+      case 'processing': return 'bg-blue-400 animate-pulse';
+      case 'active': return 'bg-green-400';
+      case 'complete': return 'bg-purple-400';
+      default: return 'bg-slate-400';
     }
   };
 
-  const tabs = [
-    { id: 'upload' as const, label: 'Upload Data', icon: FileText },
-    { id: 'data' as const, label: 'Data View', icon: BarChart3 },
-    { id: 'chat' as const, label: 'AI Chat', icon: MessageSquare },
-    { id: 'settings' as const, label: 'Settings', icon: Settings },
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg"></div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                  Enterprise Insights
-                </h1>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <HealthIndicator />
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className={`min-h-screen bg-black ${className}`}>
+      {/* Minimal Background Pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.1) 1px, transparent 0)`,
+          backgroundSize: '60px 60px'
+        }} />
+      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tab Navigation */}
-        <div className="mb-8">
-          <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="-mb-px flex space-x-8">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === tab.id
-                        ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-        </div>
+      {/* Subtle ambient lighting - Minimal */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl" />
+      </div>
 
-        {/* Tab Content */}
-        <div className="space-y-8">
-          {activeTab === 'upload' && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                  Upload Your Data
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Upload CSV, Excel, or JSON files to get started with data analysis.
-                </p>
-              </div>
-              
-              <FileUploadQueue
-                onUploadComplete={handleUploadComplete}
-                onUploadError={handleUploadError}
-                className="max-w-4xl"
-              />
-            </div>
-          )}
-
-          {activeTab === 'data' && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                  Data Analysis
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Explore and analyze your uploaded data with interactive tables and charts.
-                </p>
+      {/* Main Content - Centered Layout */}
+      <div className="relative z-10 min-h-screen flex flex-col">
+        {/* Header */}
+        <header className="relative">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <div className="flex items-center justify-between h-20">
+              {/* Logo and Title */}
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Brain className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold text-white">
+                    Enterprise Insights
+                  </h1>
+                </div>
               </div>
 
-              {tableData.length > 0 ? (
-                <DataTable
-                  data={tableData}
-                  columns={tableColumns}
-                  title="Dataset Preview"
-                  searchable={true}
-                  exportable={true}
-                  selectable={true}
-                  pagination={true}
-                  pageSize={25}
-                  onExport={handleDataExport}
+              {/* Search Bar */}
+              <div className="relative max-w-sm">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  placeholder="Search agents..."
+                  className="w-full px-4 py-2 pl-10 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
                 />
-              ) : (
-                <div className="text-center py-12">
-                  <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                    No Data Available
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    Upload a file to see your data here.
-                  </p>
-                  <button
-                    onClick={() => setActiveTab('upload')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Upload Data
-                  </button>
-                </div>
-              )}
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              </div>
             </div>
-          )}
+          </div>
+        </header>
 
-          {activeTab === 'chat' && (
+        {/* Main Content */}
+        <main className="flex-1 max-w-6xl mx-auto px-6 lg:px-8 py-6 w-full">
+          <div className="space-y-8">
+            {/* Hero Section */}
+            <div className="text-center space-y-3">
+              <h2 className="text-3xl font-bold text-white">
+                AI-Powered Business Intelligence
+              </h2>
+              <p className="text-slate-400 max-w-2xl mx-auto">
+                Upload your data and let our intelligent agents analyze, process, and generate actionable insights
+              </p>
+            </div>
+
+            {/* Upload Section */}
+            <div className="relative max-w-2xl mx-auto">
+              {/* Upload Card */}
+              <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
+                <div className="text-center mb-4">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 rounded-xl mb-3">
+                    <Upload className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white mb-1">Upload Your Data</h3>
+                  <p className="text-slate-400 text-sm">Drag and drop files here or click to browse</p>
+                </div>
+
+                <FileUploadQueue
+                  onUploadComplete={handleUploadComplete}
+                  onUploadError={handleUploadError}
+                  className="mb-6"
+                />
+
+                {uploadedFiles.length > 0 && (
+                  <div className="mt-6 p-4 bg-white/5 rounded-xl border border-white/10">
+                    <h4 className="text-sm font-semibold text-white mb-3">Uploaded Files</h4>
+                    <div className="space-y-2">
+                      {uploadedFiles.map((file) => (
+                        <div key={file.id} className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
+                          <div className="flex items-center space-x-2">
+                            <FileText className="w-4 h-4 text-blue-400" />
+                            <span className="text-white text-sm font-medium">{file.name}</span>
+                          </div>
+                          <span className="text-slate-500 text-xs">
+                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 4 Core Agents Section */}
             <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                  AI Assistant
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Chat with our AI assistant to get insights from your data.
-                </p>
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-white mb-2">AI Agent Ecosystem</h3>
+                <p className="text-slate-400">Four specialized agents working together to analyze your data</p>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                <div className="text-center py-12">
-                  <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                    AI Chat Coming Soon
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    The conversational AI interface will be available in the next update.
-                  </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {agents.map((agent) => {
+                  const IconComponent = agent.icon;
+                  return (
+                    <div
+                      key={agent.id}
+                      onClick={() => handleAgentSelect(agent)}
+                      className="group relative cursor-pointer w-full"
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Select ${agent.name}`}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleAgentSelect(agent);
+                        }
+                      }}
+                    >
+                      {/* Agent Card */}
+                      <div className="relative bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 h-72 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10 overflow-hidden">
+                        {/* Background Gradient - Subtle */}
+                        <div className={`absolute inset-0 ${agent.gradient} opacity-0 group-hover:opacity-50 transition-opacity duration-500`} />
+                        
+                        {/* Content */}
+                        <div className="relative z-10 h-full flex flex-col">
+                          {/* Agent Icon */}
+                          <div className={`w-14 h-14 bg-gradient-to-br ${agent.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-105 transition-transform duration-300 shadow-lg`}>
+                            <IconComponent className="w-7 h-7 text-white" />
+                          </div>
+
+                          {/* Agent Info */}
+                          <div className="flex-1">
+                            <h4 className="text-lg font-bold text-white mb-2 group-hover:text-blue-200 transition-colors duration-300">
+                              {agent.name}
+                            </h4>
+                            <p className="text-slate-400 text-sm leading-relaxed mb-4">
+                              {agent.description}
+                            </p>
+                          </div>
+
+                          {/* Status */}
+                          <div className="flex items-center space-x-2">
+                            <div className={`w-2 h-2 rounded-full ${getStatusColor(agent.status)}`} />
+                            <span className="text-slate-500 text-xs uppercase tracking-wide">{agent.status}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Metrics Dashboard */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-slate-500 text-xs uppercase tracking-wide">Total Files</p>
+                    <p className="text-2xl font-bold text-white mt-1">{uploadedFiles.length}</p>
+                  </div>
+                  <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-white" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-slate-500 text-xs uppercase tracking-wide">Data Points</p>
+                    <p className="text-2xl font-bold text-white mt-1">2.4M</p>
+                  </div>
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                    <Database className="w-5 h-5 text-white" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-slate-500 text-xs uppercase tracking-wide">AI Insights</p>
+                    <p className="text-2xl font-bold text-white mt-1">127</p>
+                  </div>
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-violet-600 rounded-lg flex items-center justify-center">
+                    <Zap className="w-5 h-5 text-white" />
+                  </div>
                 </div>
               </div>
             </div>
-          )}
 
-          {activeTab === 'settings' && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                  Settings
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Configure your preferences and application settings.
-                </p>
-              </div>
-
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                <div className="text-center py-12">
-                  <Settings className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                    Settings Panel Coming Soon
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    Configuration options will be available in the next update.
-                  </p>
+            {/* Chat Interface */}
+            {selectedAgent && (
+              <div className="max-w-3xl mx-auto">
+                <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className={`w-10 h-10 bg-gradient-to-br ${selectedAgent.color} rounded-lg flex items-center justify-center`}>
+                      <selectedAgent.icon className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-white">{selectedAgent.name}</h4>
+                      <p className="text-slate-500 text-sm">Ready to assist with your analysis</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="h-48 bg-white/5 rounded-xl border border-white/10 p-3 overflow-y-auto">
+                      <p className="text-slate-400 text-center text-sm">Chat interface will appear here</p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        placeholder={`Ask ${selectedAgent.name} anything...`}
+                        className="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500/50 text-sm"
+                      />
+                      <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all duration-200 text-sm">
+                        Send
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </main>
       </div>
     </div>
   );

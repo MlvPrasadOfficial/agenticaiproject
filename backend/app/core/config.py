@@ -84,10 +84,65 @@ class Settings(BaseSettings):
     LANGSMITH_API_KEY: Optional[str] = None
     LANGSMITH_PROJECT: str = "enterprise-insights-copilot"
     
-    # Vector Database
+    # Vector Database - Pinecone Configuration
     PINECONE_API_KEY: Optional[str] = None
     PINECONE_ENVIRONMENT: str = "us-east1-gcp"
     PINECONE_INDEX_NAME: str = "enterprise-insights"
+    PINECONE_HOST: Optional[str] = None
+    PINECONE_DIMENSION: int = 384
+    PINECONE_METRIC: str = "cosine"
+    PINECONE_CLOUD: str = "aws"
+    PINECONE_REGION: str = "us-east-1"
+    PINECONE_TOP_K: int = 10
+    PINECONE_INCLUDE_METADATA: bool = True
+    PINECONE_INCLUDE_VALUES: bool = False
+    PINECONE_BATCH_SIZE: int = 100
+    PINECONE_MAX_RETRIES: int = 3
+    PINECONE_TIMEOUT: int = 30
+    
+    # Ollama Configuration
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "llama3.1:8b"
+    OLLAMA_TIMEOUT: int = 120
+    OLLAMA_TEMPERATURE: float = 0.7
+    OLLAMA_MAX_TOKENS: int = 2048
+    
+    # LangChain Configuration
+    LANGCHAIN_TRACING_V2: bool = True
+    LANGCHAIN_PROJECT: str = "enterprise-insights-copilot"
+    LANGCHAIN_ENDPOINT: str = "https://api.smith.langchain.com"
+    
+    # Application Configuration
+    APP_NAME: str = "Enterprise Insights Copilot"
+    APP_VERSION: str = "1.0.0"
+    API_PREFIX: str = "/api/v1"
+    WORKERS: int = 1
+    
+    # CORS Configuration
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "https://localhost:3000"]
+    CORS_CREDENTIALS: bool = True
+    CORS_METHODS: List[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
+    CORS_HEADERS: List[str] = ["*"]
+    
+    # File Upload Configuration
+    ALLOWED_EXTENSIONS: List[str] = ["csv", "xlsx", "xls", "json", "txt", "pdf"]
+    UPLOAD_TIMEOUT: int = 300
+    
+    # Database Configuration
+    DATABASE_POOL_TIMEOUT: int = 30
+    DATABASE_ECHO: bool = False
+    
+    # Cache Configuration
+    CACHE_MAX_SIZE: int = 1000
+    
+    # Token Configuration
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    
+    # Logging Configuration
+    DETAILED_LOGS: bool = True
+    
+    # Analytics Configuration
+    ENABLE_ANALYTICS: bool = True
     
     # Agent Configuration
     DEFAULT_LLM_MODEL: str = "gpt-4"
@@ -128,6 +183,24 @@ class Settings(BaseSettings):
             return info.data["ENVIRONMENT"] == Environment.DEVELOPMENT
         return v
     
+    @field_validator("CORS_ORIGINS", "CORS_METHODS", "CORS_HEADERS", "ALLOWED_EXTENSIONS", mode="before")
+    @classmethod
+    def validate_list_fields(cls, v):
+        """Parse list fields from environment variables"""
+        if isinstance(v, str):
+            # Handle JSON-like strings
+            if v.startswith('[') and v.endswith(']'):
+                import json
+                try:
+                    return json.loads(v)
+                except json.JSONDecodeError:
+                    # Fallback to comma-separated
+                    v = v.strip('[]"').replace('"', '')
+                    return [item.strip() for item in v.split(',')]
+            else:
+                return [item.strip() for item in v.split(',')]
+        return v
+
     @field_validator("ALLOWED_HOSTS", mode="before")
     @classmethod
     def validate_allowed_hosts(cls, v):
@@ -164,6 +237,7 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = True
+        extra = "allow"  # Allow extra fields to prevent validation errors
 
 
 @lru_cache()
